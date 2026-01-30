@@ -1,0 +1,42 @@
+# 编译生成文件
+build/
+*.o
+*.so
+*.a
+*.out
+
+# 可执行文件
+kv_server
+kv_client
+test_*
+
+# IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 日志文件
+*.log
+logs/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+/tmp/
+*.tmp
+*.temp
+
+# 测试报告
+test_reports/
+test_results/
+
+# 个人配置
+.env
+*.local
+
+# 备份文件
+*.backup
+*.bak
