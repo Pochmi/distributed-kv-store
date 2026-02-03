@@ -1,42 +1,47 @@
-# 编译生成文件
+# 构建输出
 build/
+dist/
+*.exe
+*.out
+*.app
+
+# 编译文件
 *.o
 *.so
-*.a
-*.out
+*.dylib
+*.dll
 
-# 可执行文件
-kv_server
-kv_client
-test_*
-
-# IDE文件
-.vscode/
-.idea/
-*.swp
-*.swo
+# 依赖目录
+third_party/
 
 # 日志文件
 *.log
 logs/
 
-# 系统文件
+# 数据文件
+data/
+*.pid
+
+# 编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
-Thumbs.db
 
 # 临时文件
-/tmp/
 *.tmp
 *.temp
 
-# 测试报告
-test_reports/
-test_results/
-
-# 个人配置
-.env
-*.local
+# 测试数据
+tests/*/data/
+tests/*/logs/
 
 # 备份文件
 *.backup
 *.bak
+*.orig
+*.original
+*.fixed
+*.before_fix

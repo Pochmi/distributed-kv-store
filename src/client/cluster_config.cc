@@ -1,6 +1,7 @@
 #include "cluster_config.h"
 #include <functional>
 #include <iostream>
+#include <cstdlib>
 
 ClusterConfig& ClusterConfig::getInstance() {
     static ClusterConfig instance;
@@ -8,21 +9,24 @@ ClusterConfig& ClusterConfig::getInstance() {
 }
 
 void ClusterConfig::initDefaultConfig() {
+    // 单节点配置 - 总是使用6381端口
+    // 可以通过环境变量 KV_SERVER_PORT 修改
+    const char* env_port = std::getenv("KV_SERVER_PORT");
+    int port = env_port ? std::atoi(env_port) : 6381;
+    
     nodes_ = {
-        {"shard-1", "127.0.0.1", 6381, "master", true},
-        {"shard-2", "127.0.0.1", 6382, "master", true},
-        {"shard-3", "127.0.0.1", 6383, "master", true}
+        {"server-1", "127.0.0.1", port, "master", true}
     };
     
-    std::cout << "[Cluster] Initialized with " << nodes_.size() << " nodes" << std::endl;
+    std::cout << "[Cluster] Config: single node at 127.0.0.1:" << port << std::endl;
+    std::cout << "[Cluster] Hint: Start server with: ./build/kv_server " << port << std::endl;
 }
 
 NodeInfo ClusterConfig::getNodeByKey(const std::string& key) {
-    if (nodes_.empty()) initDefaultConfig();
+    if (nodes_.empty()) {
+        initDefaultConfig();
+    }
     
-    std::hash<std::string> hash_fn;
-    size_t hash_value = hash_fn(key);
-    size_t node_index = hash_value % nodes_.size();
-    
-    return nodes_[node_index];
+    // 单节点：总是返回这个节点
+    return nodes_[0];
 }
