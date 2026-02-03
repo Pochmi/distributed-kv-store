@@ -1,117 +1,113 @@
-// src/main_client.cc
-#include "common/logger.h"
 #include <iostream>
 #include <string>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <cstring>
+#include "client/kv_client.h"
 
-class SimpleClient {
-public:
-    SimpleClient(const std::string& host, int port) : host_(host), port_(port), sock_fd_(-1) {}
+void printUsage() {
+    std::cout << "分布式KV存储客户端 - 使用说明" << std::endl;
+    std::cout << "=============================" << std::endl;
+    std::cout << "命令格式:" << std::endl;
+    std::cout << "  kv_client set <key> <value>  # 设置键值" << std::endl;
+    std::cout << "  kv_client get <key>          # 获取键值" << std::endl;
+    std::cout << "  kv_client del <key>          # 删除键值" << std::endl;
+    std::cout << "  kv_client test               # 运行测试" << std::endl;
+    std::cout << std::endl;
+    std::cout << "示例:" << std::endl;
+    std::cout << "  ./kv_client set name \"张三\"" << std::endl;
+    std::cout << "  ./kv_client get name" << std::endl;
+    std::cout << "  ./kv_client del name" << std::endl;
+}
+
+void runTest() {
+    std::cout << "=== 运行客户端测试 ===" << std::endl;
     
-    bool Connect() {
-        sock_fd_ = socket(AF_INET, SOCK_STREAM, 0);
-        if (sock_fd_ < 0) {
-            std::cerr << "Failed to create socket" << std::endl;
-            return false;
-        }
-        
-        struct sockaddr_in server_addr;
-        server_addr.sin_family = AF_INET;
-        server_addr.sin_port = htons(port_);
-        
-        if (inet_pton(AF_INET, host_.c_str(), &server_addr.sin_addr) <= 0) {
-            std::cerr << "Invalid address" << std::endl;
-            close(sock_fd_);
-            return false;
-        }
-        
-        if (connect(sock_fd_, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-            std::cerr << "Connection failed" << std::endl;
-            close(sock_fd_);
-            return false;
-        }
-        
-        std::cout << "Connected to " << host_ << ":" << port_ << std::endl;
-        return true;
+    KVClient client;
+    
+    // 测试1: SET
+    std::cout << "\n1. 测试 SET 操作:" << std::endl;
+    if (client.put("test_key", "test_value")) {
+        std::cout << "   ✅ SET 成功" << std::endl;
+    } else {
+        std::cout << "   ❌ SET 失败" << std::endl;
     }
     
-    std::string SendCommand(const std::string& command) {
-        if (sock_fd_ < 0) {
-            return "ERROR: Not connected";
-        }
-        
-        std::string full_command = command + "\n";
-        if (send(sock_fd_, full_command.c_str(), full_command.length(), 0) < 0) {
-            return "ERROR: Send failed";
-        }
-        
-        char buffer[1024];
-        ssize_t bytes_read = recv(sock_fd_, buffer, sizeof(buffer) - 1, 0);
-        if (bytes_read <= 0) {
-            return "ERROR: Receive failed";
-        }
-        
-        buffer[bytes_read] = '\0';
-        return std::string(buffer);
+    // 测试2: GET
+    std::cout << "\n2. 测试 GET 操作:" << std::endl;
+    std::string value = client.get("test_key");
+    if (!value.empty()) {
+        std::cout << "   ✅ GET 成功: " << value << std::endl;
+    } else {
+        std::cout << "   ❌ GET 失败" << std::endl;
     }
     
-    void Disconnect() {
-        if (sock_fd_ >= 0) {
-            close(sock_fd_);
-            sock_fd_ = -1;
-        }
+    // 测试3: DELETE
+    std::cout << "\n3. 测试 DELETE 操作:" << std::endl;
+    if (client.del("test_key")) {
+        std::cout << "   ✅ DELETE 成功" << std::endl;
+    } else {
+        std::cout << "   ❌ DELETE 失败" << std::endl;
     }
     
-    ~SimpleClient() {
-        Disconnect();
+    // 测试4: 验证DELETE
+    std::cout << "\n4. 验证 DELETE 结果:" << std::endl;
+    value = client.get("test_key");
+    if (value.empty()) {
+        std::cout << "   ✅ 键已删除" << std::endl;
+    } else {
+        std::cout << "   ❌ 键仍然存在: " << value << std::endl;
     }
     
-private:
-    std::string host_;
-    int port_;
-    int sock_fd_;
-};
+    std::cout << "\n=== 测试完成 ===" << std::endl;
+}
 
 int main(int argc, char* argv[]) {
-    Logger::instance().set_level(WARNING);  // 客户端日志较少
-    
-    std::string host = "127.0.0.1";
-    int port = 6379;
-    
-    if (argc > 1) {
-        host = argv[1];
-    }
-    if (argc > 2) {
-        port = std::stoi(argv[2]);
-    }
-    
-    SimpleClient client(host, port);
-    
-    if (!client.Connect()) {
+    if (argc < 2) {
+        printUsage();
         return 1;
     }
     
-    std::cout << "KV Store Client" << std::endl;
-    std::cout << "Type 'quit' to exit" << std::endl;
-    std::cout << "Commands: SET <key> <value>, GET <key>, DEL <key>, EXISTS <key>, PING" << std::endl;
+    std::string command = argv[1];
+    KVClient client;
     
-    std::string input;
-    while (true) {
-        std::cout << "> ";
-        std::getline(std::cin, input);
+    if (command == "set" && argc >= 4) {
+        std::string key = argv[2];
+        std::string value = argv[3];
         
-        if (input == "quit" || input == "exit") {
-            break;
+        if (client.put(key, value)) {
+            std::cout << "✅ SET 成功: " << key << " = " << value << std::endl;
+        } else {
+            std::cerr << "❌ SET 失败" << std::endl;
         }
         
-        std::string response = client.SendCommand(input);
-        std::cout << response;
+    } else if (command == "get" && argc >= 3) {
+        std::string key = argv[2];
+        std::string value = client.get(key);
+        
+        if (!value.empty()) {
+            std::cout << key << " = " << value << std::endl;
+        } else {
+            std::cout << "键 '" << key << "' 不存在" << std::endl;
+        }
+        
+    } else if (command == "del" && argc >= 3) {
+        std::string key = argv[2];
+        
+        if (client.del(key)) {
+            std::cout << "✅ DELETE 成功: " << key << std::endl;
+        } else {
+            std::cerr << "❌ DELETE 失败" << std::endl;
+        }
+        
+    } else if (command == "test") {
+        runTest();
+        
+    } else if (command == "--help" || command == "-h") {
+        printUsage();
+        
+    } else {
+        std::cerr << "错误: 无效的命令或参数" << std::endl;
+        printUsage();
+        return 1;
     }
     
-    client.Disconnect();
     return 0;
 }

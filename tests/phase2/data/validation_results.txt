@@ -1,0 +1,240 @@
+❌ shard_key_1: 错误
+   期望: value_001_1770128237306076768
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_1
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_1' -> Node shard-2 (127.0.0.1:6382)
+[KVClient] Server response: ERROR Key not found: shard_key_1
+shard_key_1 = ERROR Key not found: shard_key_1
+❌ shard_key_2: 错误
+   期望: value_002_1770128237313421573
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_2
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_2' -> Node shard-2 (127.0.0.1:6382)
+[KVClient] Server response: ERROR Key not found: shard_key_2
+shard_key_2 = ERROR Key not found: shard_key_2
+❌ shard_key_3: 错误
+   期望: value_003_1770128237317130012
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_3
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_3' -> Node shard-2 (127.0.0.1:6382)
+[KVClient] Server response: ERROR Key not found: shard_key_3
+shard_key_3 = ERROR Key not found: shard_key_3
+❌ shard_key_4: 错误
+   期望: value_004_1770128237320921491
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_4
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_4' -> Node shard-3 (127.0.0.1:6383)
+[KVClient] Server response: ERROR Key not found: shard_key_4
+shard_key_4 = ERROR Key not found: shard_key_4
+❌ shard_key_5: 错误
+   期望: value_005_1770128237329822353
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_5
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_5' -> Node shard-1 (127.0.0.1:6381)
+[KVClient] Server response: ERROR Key not found: shard_key_5
+shard_key_5 = ERROR Key not found: shard_key_5
+❌ shard_key_6: 错误
+   期望: value_006_1770128237338379279
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_6
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_6' -> Node shard-2 (127.0.0.1:6382)
+[KVClient] Server response: ERROR Key not found: shard_key_6
+shard_key_6 = ERROR Key not found: shard_key_6
+❌ shard_key_7: 错误
+   期望: value_007_1770128237350141091
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_7
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_7' -> Node shard-1 (127.0.0.1:6381)
+[KVClient] Server response: ERROR Key not found: shard_key_7
+shard_key_7 = ERROR Key not found: shard_key_7
+❌ shard_key_8: 错误
+   期望: value_008_1770128237361753790
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_8
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_8' -> Node shard-3 (127.0.0.1:6383)
+[KVClient] Server response: ERROR Key not found: shard_key_8
+shard_key_8 = ERROR Key not found: shard_key_8
+❌ shard_key_9: 错误
+   期望: value_009_1770128237366548117
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_9
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_9' -> Node shard-1 (127.0.0.1:6381)
+[KVClient] Server response: ERROR Key not found: shard_key_9
+shard_key_9 = ERROR Key not found: shard_key_9
+❌ shard_key_10: 错误
+   期望: value_010_1770128237371471956
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_10
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_10' -> Node shard-2 (127.0.0.1:6382)
+[KVClient] Server response: ERROR Key not found: shard_key_10
+shard_key_10 = ERROR Key not found: shard_key_10
+❌ shard_key_11: 错误
+   期望: value_011_1770128237378889729
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_11
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_11' -> Node shard-2 (127.0.0.1:6382)
+[KVClient] Server response: ERROR Key not found: shard_key_11
+shard_key_11 = ERROR Key not found: shard_key_11
+❌ shard_key_12: 错误
+   期望: value_012_1770128237383110662
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_12
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_12' -> Node shard-1 (127.0.0.1:6381)
+[KVClient] Server response: ERROR Key not found: shard_key_12
+shard_key_12 = ERROR Key not found: shard_key_12
+❌ shard_key_13: 错误
+   期望: value_013_1770128237388635956
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_13
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_13' -> Node shard-3 (127.0.0.1:6383)
+[KVClient] Server response: ERROR Key not found: shard_key_13
+shard_key_13 = ERROR Key not found: shard_key_13
+❌ shard_key_14: 错误
+   期望: value_014_1770128237396913127
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_14
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_14' -> Node shard-2 (127.0.0.1:6382)
+[KVClient] Server response: ERROR Key not found: shard_key_14
+shard_key_14 = ERROR Key not found: shard_key_14
+❌ shard_key_15: 错误
+   期望: value_015_1770128237401961420
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_15
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_15' -> Node shard-2 (127.0.0.1:6382)
+[KVClient] Server response: ERROR Key not found: shard_key_15
+shard_key_15 = ERROR Key not found: shard_key_15
+❌ shard_key_16: 错误
+   期望: value_016_1770128237406664123
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_16
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_16' -> Node shard-2 (127.0.0.1:6382)
+[KVClient] Server response: ERROR Key not found: shard_key_16
+shard_key_16 = ERROR Key not found: shard_key_16
+❌ shard_key_17: 错误
+   期望: value_017_1770128237411611732
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_17
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_17' -> Node shard-1 (127.0.0.1:6381)
+[KVClient] Server response: ERROR Key not found: shard_key_17
+shard_key_17 = ERROR Key not found: shard_key_17
+❌ shard_key_18: 错误
+   期望: value_018_1770128237416502237
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_18
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_18' -> Node shard-3 (127.0.0.1:6383)
+[KVClient] Server response: ERROR Key not found: shard_key_18
+shard_key_18 = ERROR Key not found: shard_key_18
+❌ shard_key_19: 错误
+   期望: value_019_1770128237421133019
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_19
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_19' -> Node shard-1 (127.0.0.1:6381)
+[KVClient] Server response: ERROR Key not found: shard_key_19
+shard_key_19 = ERROR Key not found: shard_key_19
+❌ shard_key_20: 错误
+   期望: value_020_1770128237427118722
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_20
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_20' -> Node shard-2 (127.0.0.1:6382)
+[KVClient] Server response: ERROR Key not found: shard_key_20
+shard_key_20 = ERROR Key not found: shard_key_20
+❌ shard_key_21: 错误
+   期望: value_021_1770128237431352271
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_21
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_21' -> Node shard-3 (127.0.0.1:6383)
+[KVClient] Server response: ERROR Key not found: shard_key_21
+shard_key_21 = ERROR Key not found: shard_key_21
+❌ shard_key_22: 错误
+   期望: value_022_1770128237435538074
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_22
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_22' -> Node shard-3 (127.0.0.1:6383)
+[KVClient] Server response: ERROR Key not found: shard_key_22
+shard_key_22 = ERROR Key not found: shard_key_22
+❌ shard_key_23: 错误
+   期望: value_023_1770128237439362367
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_23
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_23' -> Node shard-3 (127.0.0.1:6383)
+[KVClient] Server response: ERROR Key not found: shard_key_23
+shard_key_23 = ERROR Key not found: shard_key_23
+❌ shard_key_24: 错误
+   期望: value_024_1770128237443058769
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_24
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_24' -> Node shard-2 (127.0.0.1:6382)
+[KVClient] Server response: ERROR Key not found: shard_key_24
+shard_key_24 = ERROR Key not found: shard_key_24
+❌ shard_key_25: 错误
+   期望: value_025_1770128237447470260
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_25
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_25' -> Node shard-3 (127.0.0.1:6383)
+[KVClient] Server response: ERROR Key not found: shard_key_25
+shard_key_25 = ERROR Key not found: shard_key_25
+❌ shard_key_26: 错误
+   期望: value_026_1770128237462010754
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_26
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_26' -> Node shard-3 (127.0.0.1:6383)
+[KVClient] Server response: ERROR Key not found: shard_key_26
+shard_key_26 = ERROR Key not found: shard_key_26
+❌ shard_key_27: 错误
+   期望: value_027_1770128237467407220
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_27
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_27' -> Node shard-2 (127.0.0.1:6382)
+[KVClient] Server response: ERROR Key not found: shard_key_27
+shard_key_27 = ERROR Key not found: shard_key_27
+❌ shard_key_28: 错误
+   期望: value_028_1770128237473510835
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_28
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_28' -> Node shard-1 (127.0.0.1:6381)
+[KVClient] Server response: ERROR Key not found: shard_key_28
+shard_key_28 = ERROR Key not found: shard_key_28
+❌ shard_key_29: 错误
+   期望: value_029_1770128237478362052
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_29
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_29' -> Node shard-1 (127.0.0.1:6381)
+[KVClient] Server response: ERROR Key not found: shard_key_29
+shard_key_29 = ERROR Key not found: shard_key_29
+❌ shard_key_30: 错误
+   期望: value_030_1770128237484258520
+   实际: [KVClient] Initialized
+[KVClient] GET shard_key_30
+[Cluster] Initialized with 3 nodes
+[Router] Key 'shard_key_30' -> Node shard-3 (127.0.0.1:6383)
+[KVClient] Server response: ERROR Key not found: shard_key_30
+shard_key_30 = ERROR Key not found: shard_key_30
