@@ -3,176 +3,665 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>分布式KV存储系统 - 毕业设计项目</title>
+    <meta name="description" content="分布式键值存储系统 - 毕业设计项目">
+    <title>分布式键值存储系统 - 毕业设计项目</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 0; text-align: center; }
-        h1 { font-size: 2.5rem; margin-bottom: 20px; }
-        .subtitle { font-size: 1.2rem; opacity: 0.9; }
-        .badge { display: inline-block; padding: 4px 8px; background: rgba(255,255,255,0.2); border-radius: 4px; margin: 0 5px; }
-        section { margin: 40px 0; padding: 30px; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        h2 { color: #667eea; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
-        .progress-bar { background: #f0f0f0; border-radius: 20px; height: 20px; margin: 20px 0; }
-        .progress { background: linear-gradient(90deg, #4caf50, #8bc34a); height: 100%; border-radius: 20px; width: 50%; }
-        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .feature-card { padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; }
-        .feature-card.completed { border-left: 4px solid #4caf50; }
-        .feature-card.in-progress { border-left: 4px solid #ff9800; }
-        .feature-card.planned { border-left: 4px solid #9e9e9e; }
-        .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
-        .status.completed { background: #e8f5e9; color: #2e7d32; }
-        .status.in-progress { background: #fff3e0; color: #ef6c00; }
-        footer { text-align: center; margin-top: 40px; padding: 20px; color: #666; border-top: 1px solid #eee; }
-        .github-btn { display: inline-block; background: #24292e; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; margin-top: 20px; }
-        .github-btn:hover { background: #444; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body { 
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; 
+            line-height: 1.6; 
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px; 
+        }
+        
+        /* 头部样式 */
+        header { 
+            background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%); 
+            color: white; 
+            padding: 80px 0; 
+            text-align: center; 
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.3;
+        }
+        
+        h1 { 
+            font-size: 2.8rem; 
+            margin-bottom: 15px; 
+            font-weight: 700;
+            position: relative;
+        }
+        
+        .subtitle { 
+            font-size: 1.3rem; 
+            opacity: 0.9; 
+            max-width: 800px;
+            margin: 0 auto 25px;
+            position: relative;
+        }
+        
+        .badge { 
+            display: inline-block; 
+            padding: 8px 16px; 
+            background: rgba(255, 255, 255, 0.15); 
+            border-radius: 20px; 
+            margin: 5px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        /* 项目状态指示器 */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: rgba(46, 204, 113, 0.2);
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #2ecc71;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* 主体内容 */
+        .main-content {
+            margin: 40px 0;
+        }
+        
+        .card { 
+            padding: 30px; 
+            background: white; 
+            border-radius: 15px; 
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3498db;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h2 i {
+            color: #3498db;
+        }
+        
+        h3 {
+            color: #34495e;
+            margin: 20px 0 10px;
+            font-size: 1.3rem;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            color: #4a5568;
+            line-height: 1.8;
+        }
+        
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 20px;
+        }
+        
+        li {
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        li:before {
+            content: "•";
+            color: #3498db;
+            font-weight: bold;
+            position: absolute;
+            left: -15px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .feature-item {
+            padding: 25px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-item:hover {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        }
+        
+        .feature-item i {
+            color: #2980b9;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            background: rgba(52, 152, 219, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+        }
+        
+        /* 技术栈 */
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .tech-tag {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #2c3e50;
+            border: 1px solid #bbdefb;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        
+        /* 系统架构图 */
+        .architecture-diagram {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px dashed #dee2e6;
+            text-align: center;
+        }
+        
+        .diagram-placeholder {
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        /* 项目时间线 */
+        .timeline {
+            position: relative;
+            margin: 30px 0;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #3498db;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-left: 50px;
+            margin-bottom: 30px;
+            padding-left: 20px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -13px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            background: #3498db;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px #3498db;
+        }
+        
+        .timeline-date {
+            color: #3498db;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        /* 链接按钮 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background: linear-gradient(135deg, #2980b9 0%, #1c6ea4 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #3498db;
+            color: #3498db;
+        }
+        
+        .btn-outline:hover {
+            background: #3498db;
+            color: white;
+        }
+        
+        /* 页脚 */
+        footer { 
+            text-align: center; 
+            padding: 40px 20px; 
+            margin-top: 60px; 
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); 
+            color: #ecf0f1;
+            border-radius: 20px 20px 0 0;
+        }
+        
+        footer p {
+            color: #bdc3c7;
+            margin-bottom: 10px;
+        }
+        
+        .footer-links {
+            margin-top: 20px;
+        }
+        
+        .footer-links a {
+            color: #95a5a6;
+            margin: 0 10px;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: #3498db;
+        }
+        
+        .update-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: inline-block;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.2rem; }
+            .subtitle { font-size: 1.1rem; }
+            .container { padding: 15px; }
+            header { padding: 60px 0; }
+            .card { padding: 20px; }
+            .feature-grid { grid-template-columns: 1fr; }
+            .timeline::before { left: 15px; }
+            .timeline-item { margin-left: 40px; }
+        }
+        
+        /* 动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.6s ease forwards;
+        }
+        
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+        
+        /* 代码样式 */
+        code {
+            background: #f1f8ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #e74c3c;
+            font-size: 0.9em;
+            border: 1px solid #d1d8e0;
+        }
+        
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
     </style>
 </head>
 <body>
     <header>
         <div class="container">
-            <h1>分布式键值存储系统</h1>
-            <p class="subtitle">毕业设计项目 - 西安邮电大学</p>
-            <p>学生：王硕 | 学号：04223032 | 指导教师：张庆生</p>
-            <span class="badge">C++</span>
-            <span class="badge">分布式系统</span>
-            <span class="badge">KV存储</span>
-            <span class="badge">GitHub</span>
+            <h1 class="animate-fadeIn">分布式键值存储系统</h1>
+            <p class="subtitle animate-fadeIn delay-1">高性能、可扩展的分布式存储解决方案 - 毕业设计项目</p>
+            <div class="animate-fadeIn delay-2">
+                <span class="badge"><i class="fas fa-server"></i> 分布式架构</span>
+                <span class="badge"><i class="fas fa-bolt"></i> 高性能存储</span>
+                <span class="badge"><i class="fas fa-expand-arrows-alt"></i> 水平扩展</span>
+                <span class="badge"><i class="fas fa-shield-alt"></i> 高可用性</span>
+                <span class="badge"><i class="fas fa-code"></i> C++实现</span>
+            </div>
+            
+            <div class="status-indicator animate-fadeIn delay-1">
+                <span class="status-dot"></span>
+                <span>项目状态：开发进行中</span>
+            </div>
         </div>
     </header>
 
-    <div class="container">
-        <section>
-            <h2>📋 项目简介</h2>
-            <p>本项目是一个轻量级的分布式键值存储系统，采用分阶段开发模式，逐步实现从单机到分布式的完整功能。系统设计遵循"先核心，后边缘；先正确，后优化"的工程原则。</p>
+    <div class="container main-content">
+        <!-- 项目简介 -->
+        <section class="card animate-fadeIn">
+            <h2><i class="fas fa-info-circle"></i> 项目概述</h2>
+            <p>本项目旨在设计并实现一个轻量级、高性能的分布式键值存储系统原型。系统采用分布式架构，通过数据分片和主从复制机制，解决传统单机存储系统在扩展性、可用性方面的瓶颈，为理解分布式系统核心概念提供实践平台。</p>
             
-            <div class="progress-bar">
-                <div class="progress"></div>
+            <p><strong>研究背景：</strong>随着云计算与大数据技术的发展，数据规模呈爆炸式增长，传统单机存储系统在容量、性能与可用性上均面临瓶颈。分布式存储系统通过将数据分散到多台服务器上，能够实现水平的、近乎无限的扩展能力。</p>
+            
+            <p><strong>项目目标：</strong>设计并实现一个具备数据分片、主从复制、故障恢复等核心功能的分布式键值存储原型系统，通过工程实践深入理解分布式系统的架构设计、工程实现与性能优化。</p>
+            
+            <div class="tech-stack">
+                <span class="tech-tag">C++17</span>
+                <span class="tech-tag">多线程编程</span>
+                <span class="tech-tag">网络编程</span>
+                <span class="tech-tag">一致性哈希</span>
+                <span class="tech-tag">主从复制</span>
+                <span class="tech-tag">LevelDB</span>
+                <span class="tech-tag">CMake</span>
+                <span class="tech-tag">Git</span>
             </div>
-            <p>项目进度：50% 完成（2/4阶段）</p>
         </section>
-
-        <section>
-            <h2>🚀 项目进度</h2>
-            <div class="features">
-                <div class="feature-card completed">
-                    <h3>阶段一：单机服务器</h3>
-                    <span class="status completed">已完成</span>
-                    <p>实现基础KV存储引擎和网络通信框架</p>
+        
+        <!-- 系统架构 -->
+        <section class="card animate-fadeIn delay-1">
+            <h2><i class="fas fa-project-diagram"></i> 系统架构</h2>
+            <p>系统采用分层架构设计，包含以下核心模块：</p>
+            
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <i class="fas fa-layer-group"></i>
+                    <h3>客户端层</h3>
+                    <p>智能客户端实现数据路由，支持一致性哈希分片算法，自动发现集群节点并实现透明故障转移。</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-sitemap"></i>
+                    <h3>分片管理层</h3>
+                    <p>采用虚拟节点技术实现数据均匀分布，支持动态节点加入与离开，最小化数据迁移量。</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-copy"></i>
+                    <h3>复制层</h3>
+                    <p>主从异步复制机制，保证数据可靠性，支持最终一致性模型，平衡性能与数据一致性需求。</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-heartbeat"></i>
+                    <h3>故障处理层</h3>
+                    <p>心跳检测机制实时监控节点状态，支持手动故障切换，确保服务高可用性。</p>
+                </div>
+            </div>
+            
+            <div class="architecture-diagram">
+                <div class="diagram-placeholder">
+                    <i class="fas fa-diagram-project fa-3x" style="color: #3498db; margin-bottom: 15px;"></i>
+                    <p>系统架构图示意</p>
+                    <p style="font-size: 0.9em; margin-top: 10px;">客户端 → 路由层 → 分片集群 → 存储引擎</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 核心技术 -->
+        <section class="card animate-fadeIn delay-1">
+            <h2><i class="fas fa-cogs"></i> 核心技术</h2>
+            
+            <h3>1. 数据分片策略</h3>
+            <p>采用一致性哈希算法实现数据分布，通过虚拟节点技术解决数据倾斜问题。支持动态扩缩容，节点变更时仅需迁移少量数据。</p>
+            
+            <h3>2. 主从复制机制</h3>
+            <p>基于日志的异步复制，主节点将操作日志广播至从节点，从节点异步应用变更。提供最终一致性保证，优化读写性能。</p>
+            
+            <h3>3. 故障恢复流程</h3>
+            <p>实现基于心跳的故障检测，支持手动触发主从切换。故障节点恢复后可重新加入集群，数据自动同步。</p>
+            
+            <h3>4. 网络通信模型</h3>
+            <p>采用Reactor模式与多线程结合的网络框架，支持高并发连接。自定义简洁高效的二进制通信协议。</p>
+            
+            <h3>5. 存储引擎</h3>
+            <p>基于LevelDB实现持久化存储，LSM-Tree结构提供高效的顺序写入和范围查询能力。</p>
+        </section>
+        
+        <!-- 开发进展 -->
+        <section class="card animate-fadeIn delay-2">
+            <h2><i class="fas fa-tasks"></i> 开发进展</h2>
+            
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-date">第一阶段（已完成）</div>
+                    <p><strong>单机键值存储服务</strong>：实现高性能单机服务器，完成网络通信框架与基础KV引擎。</p>
                     <ul>
-                        <li>内存存储引擎</li>
-                        <li>Reactor网络模型</li>
-                        <li>自定义文本协议</li>
+                        <li>Reactor/多线程网络模型</li>
+                        <li>自定义文本协议支持</li>
+                        <li>基础SET/GET操作实现</li>
                     </ul>
                 </div>
                 
-                <div class="feature-card completed">
-                    <h3>阶段二：分布式分片</h3>
-                    <span class="status completed">已完成</span>
-                    <p>实现数据分片和智能客户端路由</p>
+                <div class="timeline-item">
+                    <div class="timeline-date">第二阶段（进行中）</div>
+                    <p><strong>分布式数据分片</strong>：实现客户端路由与静态分片，构建多节点集群。</p>
                     <ul>
-                        <li>哈希取模分片算法</li>
-                        <li>JSON集群配置</li>
-                        <li>智能客户端路由</li>
-                        <li>连接池管理</li>
+                        <li>一致性哈希分片算法</li>
+                        <li>智能客户端路由逻辑</li>
+                        <li>集群配置管理</li>
                     </ul>
                 </div>
                 
-                <div class="feature-card in-progress">
-                    <h3>阶段三：主从复制</h3>
-                    <span class="status in-progress">进行中</span>
-                    <p>实现数据复制和高可用性</p>
+                <div class="timeline-item">
+                    <div class="timeline-date">第三阶段（计划中）</div>
+                    <p><strong>高可用性实现</strong>：引入主从复制与故障恢复机制。</p>
                     <ul>
-                        <li>复制日志设计</li>
-                        <li>主从同步机制</li>
-                        <li>最终一致性</li>
-                    </ul>
-                </div>
-                
-                <div class="feature-card planned">
-                    <h3>阶段四：故障处理</h3>
-                    <span class="status planned">计划中</span>
-                    <p>实现故障检测和恢复</p>
-                    <ul>
+                        <li>异步数据复制</li>
                         <li>心跳检测机制</li>
-                        <li>故障自动发现</li>
-                        <li>手动故障切换</li>
+                        <li>手动故障切换流程</li>
+                    </ul>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-date">第四阶段（计划中）</div>
+                    <p><strong>系统测试与优化</strong>：整体联调与性能测试。</p>
+                    <ul>
+                        <li>功能正确性验证</li>
+                        <li>性能基准测试</li>
+                        <li>系统优化与文档完善</li>
                     </ul>
                 </div>
             </div>
         </section>
-
-        <section>
-            <h2>🧪 测试结果</h2>
-            <p><strong>阶段二测试验证通过：</strong></p>
-            <ul>
-                <li>✅ 分片功能：不同key被路由到不同节点</li>
-                <li>✅ 配置文件：JSON配置加载成功</li>
-                <li>✅ 基本操作：PUT/GET/DELETE功能正常</li>
-                <li>✅ 负载分布：请求均匀分布到3个节点</li>
-            </ul>
-            <p><strong>测试数据示例：</strong></p>
-            <pre>key1 → server-2 (127.0.0.1:6382)
-key2 → server-2 (127.0.0.1:6382)  
-key3 → server-1 (127.0.0.1:6381)</pre>
-        </section>
-
-        <section>
-            <h2>📁 项目结构</h2>
-            <pre><code>distributed-kv-store/
-├── src/                    # 源代码
-│   ├── client/            # 客户端模块
-│   ├── common/            # 公共模块
-│   ├── core/              # 存储引擎
-│   └── network/           # 网络模块
-├── configs/               # 配置文件
-├── tests/                 # 测试代码
-├── scripts/               # 构建脚本
-└── docs/                  # 文档</code></pre>
-        </section>
-
-        <section>
-            <h2>🚀 快速开始</h2>
-            <h3>编译项目</h3>
-            <pre><code>git clone https://github.com/你的用户名/distributed-kv-store.git
-cd distributed-kv-store
-./scripts/build.sh</code></pre>
+        
+        <!-- 快速开始 -->
+        <section class="card animate-fadeIn delay-2">
+            <h2><i class="fas fa-rocket"></i> 快速开始</h2>
             
-            <h3>运行测试</h3>
-            <pre><code>export KV_CLUSTER_CONFIG=configs/cluster_3nodes.json
-./tests/phase2/scripts/quick_test.sh</code></pre>
-        </section>
+            <h3>环境要求</h3>
+            <ul>
+                <li>Linux/macOS 操作系统</li>
+                <li>GCC 9.0+ 或 Clang 10.0+ 编译器</li>
+                <li>CMake 3.15+ 构建工具</li>
+                <li>Git 版本控制系统</li>
+            </ul>
+            
+            <h3>构建与运行</h3>
+            <pre><code># 克隆项目仓库
+git clone https://github.com/Pochmi/distributed-kv-store.git
+cd distributed-kv-store
 
-        <footer>
-            <p>© 2024 分布式KV存储系统 - 王硕</p>
-            <a href="https://github.com/你的用户名/distributed-kv-store" class="github-btn">
-                ⭐ Star on GitHub
-            </a>
-            <p style="margin-top: 20px;">
-                最后更新: <span id="current-date"></span> | 
-                版本: v0.2.0
-            </p>
-        </footer>
+# 编译项目
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j4
+
+# 启动单机服务器
+./bin/kv_server
+
+# 使用客户端连接
+./bin/kv_client --command="SET key value"</code></pre>
+            
+            <div style="margin-top: 30px;">
+                <a href="https://github.com/Pochmi/distributed-kv-store" class="btn" target="_blank">
+                    <i class="fab fa-github"></i> 查看项目源码
+                </a>
+                <a href="https://github.com/Pochmi/distributed-kv-store/wiki" class="btn btn-outline" target="_blank">
+                    <i class="fas fa-book"></i> 技术文档
+                </a>
+                <a href="https://github.com/Pochmi/distributed-kv-store/issues" class="btn btn-outline" target="_blank">
+                    <i class="fas fa-bug"></i> 问题反馈
+                </a>
+            </div>
+        </section>
     </div>
 
+    <footer>
+        <div class="container">
+            <p>© <span id="current-year"></span> 分布式键值存储系统 - 毕业设计项目</p>
+            <p>开源协议：MIT License | 项目类型：学术研究</p>
+            
+            <div class="footer-links">
+                <a href="https://github.com/Pochmi/distributed-kv-store" target="_blank">
+                    <i class="fab fa-github"></i> 项目仓库
+                </a>
+                <a href="https://github.com/Pochmi/distributed-kv-store/releases" target="_blank">
+                    <i class="fas fa-download"></i> 版本发布
+                </a>
+                <a href="https://github.com/Pochmi/distributed-kv-store/issues" target="_blank">
+                    <i class="fas fa-question-circle"></i> 帮助支持
+                </a>
+            </div>
+            
+            <div class="update-info">
+                <p><i class="fas fa-sync-alt"></i> 页面最后更新: <span id="last-update"></span></p>
+                <p style="font-size: 0.9em; margin-top: 5px;">系统自动更新 | 访问地址: <code id="page-url"></code></p>
+            </div>
+        </div>
+    </footer>
+
     <script>
-        // 显示当前日期
-        document.getElementById('current-date').textContent = new Date().toLocaleDateString('zh-CN');
+        // 自动更新年份
+        document.getElementById('current-year').textContent = new Date().getFullYear();
         
-        // 简单的进度动画
-        document.addEventListener('DOMContentLoaded', function() {
-            const progress = document.querySelector('.progress');
-            let width = 0;
-            const targetWidth = 50; // 50%进度
-            const interval = setInterval(() => {
-                if (width >= targetWidth) {
-                    clearInterval(interval);
-                } else {
-                    width++;
-                    progress.style.width = width + '%';
+        // 设置最后更新时间（自动）
+        const lastUpdate = new Date();
+        const options = { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        };
+        document.getElementById('last-update').textContent = lastUpdate.toLocaleDateString('zh-CN', options) + ' ' + lastUpdate.toLocaleTimeString('zh-CN', {hour12: false});
+        
+        // 显示当前页面URL
+        document.getElementById('page-url').textContent = window.location.href;
+        
+        // 滚动动画效果
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-fadeIn');
                 }
-            }, 20);
+            });
+        }, observerOptions);
+        
+        // 观察所有卡片
+        document.querySelectorAll('.card').forEach(card => {
+            observer.observe(card);
+        });
+        
+        // 项目状态自动更新（示例）
+        function updateProjectStatus() {
+            const statusDot = document.querySelector('.status-dot');
+            const statusText = document.querySelector('.status-indicator span:nth-child(2)');
+            
+            // 这里可以根据实际项目状态进行更新
+            const status = '开发进行中';
+            statusText.textContent = `项目状态：${status}`;
+        }
+        
+        // 控制台欢迎信息
+        console.log('%c🔧 分布式KV存储系统 %c\n欢迎访问项目展示页面！\n项目地址: https://github.com/Pochmi/distributed-kv-store', 
+            'color: #3498db; font-size: 16px; font-weight: bold;', 
+            'color: #2c3e50;');
+            
+        // 页面访问统计（仅前端展示）
+        window.addEventListener('load', () => {
+            if (!localStorage.getItem('pageVisitCount')) {
+                localStorage.setItem('pageVisitCount', 0);
+            }
+            let count = parseInt(localStorage.getItem('pageVisitCount')) + 1;
+            localStorage.setItem('pageVisitCount', count);
+            console.log(`📊 页面访问次数: ${count}`);
         });
     </script>
 </body>
