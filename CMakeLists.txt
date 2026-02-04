@@ -35,3 +35,5 @@ add_executable(kv_client
 # 链接pthread库
 target_link_libraries(kv_server pthread)
 target_link_libraries(kv_client pthread)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)

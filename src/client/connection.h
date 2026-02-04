@@ -1,21 +1,42 @@
-#ifndef CLIENT_CONNECTION_H
-#define CLIENT_CONNECTION_H
+#ifndef CONNECTION_H
+#define CONNECTION_H
 
 #include <string>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <cstring>
+#include <stdexcept>
 
 class Connection {
 public:
-    Connection();
+    Connection(const std::string& host, int port);
     ~Connection();
     
-    bool connect(const std::string& host, int port);
-    bool send(const std::string& data);
-    bool receive(std::string& data);
-    void close();
+    // 连接服务器
+    bool connect();
     
-    bool isConnected() const { return sockfd_ >= 0; }
+    // 断开连接
+    void disconnect();
+    
+    // 发送数据
+    bool send(const std::string& data);
+    
+    // 接收数据
+    std::string receive();
+    
+    // 是否已连接
+    bool isConnected() const;
     
 private:
-    int sockfd_{-1};
+    std::string host_;
+    int port_;
+    int sockfd_;
+    bool connected_;
+    
+    // 创建socket
+    bool createSocket();
 };
+
 #endif
