@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分布式KV存储系统 - 毕业设计项目</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 0; text-align: center; }
+        h1 { font-size: 2.5rem; margin-bottom: 20px; }
+        .subtitle { font-size: 1.2rem; opacity: 0.9; }
+        .badge { display: inline-block; padding: 4px 8px; background: rgba(255,255,255,0.2); border-radius: 4px; margin: 0 5px; }
+        section { margin: 40px 0; padding: 30px; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h2 { color: #667eea; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+        .progress-bar { background: #f0f0f0; border-radius: 20px; height: 20px; margin: 20px 0; }
+        .progress { background: linear-gradient(90deg, #4caf50, #8bc34a); height: 100%; border-radius: 20px; width: 50%; }
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .feature-card { padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; }
+        .feature-card.completed { border-left: 4px solid #4caf50; }
+        .feature-card.in-progress { border-left: 4px solid #ff9800; }
+        .feature-card.planned { border-left: 4px solid #9e9e9e; }
+        .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
+        .status.completed { background: #e8f5e9; color: #2e7d32; }
+        .status.in-progress { background: #fff3e0; color: #ef6c00; }
+        footer { text-align: center; margin-top: 40px; padding: 20px; color: #666; border-top: 1px solid #eee; }
+        .github-btn { display: inline-block; background: #24292e; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; margin-top: 20px; }
+        .github-btn:hover { background: #444; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>分布式键值存储系统</h1>
+            <p class="subtitle">毕业设计项目 - 西安邮电大学</p>
+            <p>学生：王硕 | 学号：04223032 | 指导教师：张庆生</p>
+            <span class="badge">C++</span>
+            <span class="badge">分布式系统</span>
+            <span class="badge">KV存储</span>
+            <span class="badge">GitHub</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <section>
+            <h2>📋 项目简介</h2>
+            <p>本项目是一个轻量级的分布式键值存储系统，采用分阶段开发模式，逐步实现从单机到分布式的完整功能。系统设计遵循"先核心，后边缘；先正确，后优化"的工程原则。</p>
+            
+            <div class="progress-bar">
+                <div class="progress"></div>
+            </div>
+            <p>项目进度：50% 完成（2/4阶段）</p>
+        </section>
+
+        <section>
+            <h2>🚀 项目进度</h2>
+            <div class="features">
+                <div class="feature-card completed">
+                    <h3>阶段一：单机服务器</h3>
+                    <span class="status completed">已完成</span>
+                    <p>实现基础KV存储引擎和网络通信框架</p>
+                    <ul>
+                        <li>内存存储引擎</li>
+                        <li>Reactor网络模型</li>
+                        <li>自定义文本协议</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card completed">
+                    <h3>阶段二：分布式分片</h3>
+                    <span class="status completed">已完成</span>
+                    <p>实现数据分片和智能客户端路由</p>
+                    <ul>
+                        <li>哈希取模分片算法</li>
+                        <li>JSON集群配置</li>
+                        <li>智能客户端路由</li>
+                        <li>连接池管理</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card in-progress">
+                    <h3>阶段三：主从复制</h3>
+                    <span class="status in-progress">进行中</span>
+                    <p>实现数据复制和高可用性</p>
+                    <ul>
+                        <li>复制日志设计</li>
+                        <li>主从同步机制</li>
+                        <li>最终一致性</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card planned">
+                    <h3>阶段四：故障处理</h3>
+                    <span class="status planned">计划中</span>
+                    <p>实现故障检测和恢复</p>
+                    <ul>
+                        <li>心跳检测机制</li>
+                        <li>故障自动发现</li>
+                        <li>手动故障切换</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>🧪 测试结果</h2>
+            <p><strong>阶段二测试验证通过：</strong></p>
+            <ul>
+                <li>✅ 分片功能：不同key被路由到不同节点</li>
+                <li>✅ 配置文件：JSON配置加载成功</li>
+                <li>✅ 基本操作：PUT/GET/DELETE功能正常</li>
+                <li>✅ 负载分布：请求均匀分布到3个节点</li>
+            </ul>
+            <p><strong>测试数据示例：</strong></p>
+            <pre>key1 → server-2 (127.0.0.1:6382)
+key2 → server-2 (127.0.0.1:6382)  
+key3 → server-1 (127.0.0.1:6381)</pre>
+        </section>
+
+        <section>
+            <h2>📁 项目结构</h2>
+            <pre><code>distributed-kv-store/
+├── src/                    # 源代码
+│   ├── client/            # 客户端模块
+│   ├── common/            # 公共模块
+│   ├── core/              # 存储引擎
+│   └── network/           # 网络模块
+├── configs/               # 配置文件
+├── tests/                 # 测试代码
+├── scripts/               # 构建脚本
+└── docs/                  # 文档</code></pre>
+        </section>
+
+        <section>
+            <h2>🚀 快速开始</h2>
+            <h3>编译项目</h3>
+            <pre><code>git clone https://github.com/你的用户名/distributed-kv-store.git
+cd distributed-kv-store
+./scripts/build.sh</code></pre>
+            
+            <h3>运行测试</h3>
+            <pre><code>export KV_CLUSTER_CONFIG=configs/cluster_3nodes.json
+./tests/phase2/scripts/quick_test.sh</code></pre>
+        </section>
+
+        <footer>
+            <p>© 2024 分布式KV存储系统 - 王硕</p>
+            <a href="https://github.com/你的用户名/distributed-kv-store" class="github-btn">
+                ⭐ Star on GitHub
+            </a>
+            <p style="margin-top: 20px;">
+                最后更新: <span id="current-date"></span> | 
+                版本: v0.2.0
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // 显示当前日期
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('zh-CN');
+        
+        // 简单的进度动画
+        document.addEventListener('DOMContentLoaded', function() {
+            const progress = document.querySelector('.progress');
+            let width = 0;
+            const targetWidth = 50; // 50%进度
+            const interval = setInterval(() => {
+                if (width >= targetWidth) {
+                    clearInterval(interval);
+                } else {
+                    width++;
+                    progress.style.width = width + '%';
+                }
+            }, 20);
+        });
+    </script>
+</body>
+</html>
