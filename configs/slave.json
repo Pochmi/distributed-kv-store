@@ -1,0 +1,24 @@
+{
+    "node": {
+        "id": "slave-1",
+        "role": "slave",
+        "host": "127.0.0.1",
+        "port": 6381,
+        "data_dir": "./data/slave-1"
+    },
+    "replication": {
+        "enabled": true,
+        "master": {
+            "host": "127.0.0.1",
+            "port": 6380,
+            "id": "master-1"
+        },
+        "reconnect_interval_ms": 3000,
+        "sync_on_startup": true
+    },
+    "read_only": true,  // 从节点只读
+    "log": {
+        "level": "INFO",
+        "file": "./logs/slave-1.log"
+    }
+}
