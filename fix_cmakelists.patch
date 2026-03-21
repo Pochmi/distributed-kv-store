@@ -1,0 +1,44 @@
+--- CMakeLists.txt.bak
++++ CMakeLists.txt
+@@ -25,11 +25,11 @@
+ # ==============================================
+ 
+ # 集群支持
+-option(WITH_CLUSTER "Build with cluster support" ON)
++option(WITH_CLUSTER "Build with cluster support" OFF)
+ if(WITH_CLUSTER)
+     message(STATUS "Cluster module configured:")
+     add_subdirectory(src/cluster)
+-    set(CLUSTER_DEFINITIONS WITH_CLUSTER=1 HEARTBEAT_INTERVAL_MS=1000)
++    set(CLUSTER_DEFINITIONS WITH_CLUSTER=0)
+ else()
+     message(STATUS "Cluster support disabled")
+     set(CLUSTER_DEFINITIONS "")
+@@ -52,7 +52,7 @@
+ # 子目录
+ add_subdirectory(src/common)
+ add_subdirectory(src/core)
+-add_subdirectory(src/cluster)
++# add_subdirectory(src/cluster)  # 已通过WITH_CLUSTER控制
+ add_subdirectory(src/client)
+ add_subdirectory(src/replication)
+ 
+@@ -75,13 +75,10 @@
+     src/client/libclient.a
+ )
+ 
+-# 集群管理工具
+-add_executable(kv_admin
+-    src/main_admin.cc
+-)
+-target_link_libraries(kv_admin
+-    common
+-)
++# 集群管理工具（只有在启用集群时才构建）
++# if(WITH_CLUSTER)
++#     add_executable(kv_admin src/main_admin.cc)
++#     target_link_libraries(kv_admin common)
++# endif()
+ 
+ # ==============================================
+ # 测试

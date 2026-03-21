@@ -52,10 +52,10 @@ sleep 2
 echo ""
 echo "4. 运行快速功能测试..."
 
-echo "🔹 测试1: 基本PUT操作"
+echo "🔹 测试1: 基本SET操作"
 echo "-------------------"
 for i in {1..3}; do
-    echo "   PUT key${i} value${i}"
+    echo "   SET key${i} value${i}"
     ./build/kv_client set key${i} value${i} 2>&1 | grep -E "成功|Node|节点|server"
 done
 

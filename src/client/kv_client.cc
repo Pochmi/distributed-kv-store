@@ -74,7 +74,7 @@ std::string KVClient::executeWithRetry(const std::string& command, const std::st
 }
 
 bool KVClient::put(const std::string& key, const std::string& value) {
-    std::string command = "PUT " + key + " " + value;
+    std::string command = "SET " + key + " " + value;
     std::string response = executeWithRetry(command, key);
     
     if (response.find("OK") != std::string::npos || 

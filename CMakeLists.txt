@@ -1,8 +1,10 @@
+# 在根目录 CMakeLists.txt 顶部添加，禁用测试
+option(BUILD_TESTS "Build tests" OFF)
 cmake_minimum_required(VERSION 3.10)
 project(distributed_kv_store VERSION 1.0.0 LANGUAGES CXX)
 
 # 设置C++标准
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

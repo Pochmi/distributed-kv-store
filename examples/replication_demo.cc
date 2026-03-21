@@ -1,56 +1,57 @@
-#include "client/kv_client.h"
-#include "common/logger.h"
+#include "../src/common/logger.h"
+#include "../src/client/kv_client.h"
 #include <iostream>
+#include <memory>
 #include <thread>
-
-void testReplication() {
-    Logger::info("Starting replication test...");
-    
-    // 创建客户端连接到主节点
-    KVClient client("127.0.0.1", 6380);
-    
-    if (!client.connect()) {
-        Logger::error("Failed to connect to master");
-        return;
-    }
-    
-    // 写入数据到主节点
-    for (int i = 0; i < 10; i++) {
-        std::string key = "key_" + std::to_string(i);
-        std::string value = "value_" + std::to_string(i);
-        
-        if (client.put(key, value)) {
-            Logger::info("Write to master successful: %s = %s", 
-                        key.c_str(), value.c_str());
-        } else {
-            Logger::error("Write failed: %s", key.c_str());
-        }
-        
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-    
-    // 从从节点读取数据验证复制
-    KVClient slave1_client("127.0.0.1", 6381);
-    if (slave1_client.connect()) {
-        std::string value;
-        if (slave1_client.get("key_5", value)) {
-            Logger::info("Read from slave1: key_5 = %s", value.c_str());
-        }
-    }
-    
-    KVClient slave2_client("127.0.0.1", 6382);
-    if (slave2_client.connect()) {
-        std::string value;
-        if (slave2_client.get("key_5", value)) {
-            Logger::info("Read from slave2: key_5 = %s", value.c_str());
-        }
-    }
-    
-    Logger::info("Replication test completed");
-}
+#include <vector>
 
 int main() {
-    Logger::setLevel(LogLevel::INFO);
-    testReplication();
+    // 初始化日志
+    Logger::instance().setLevel(LOG_INFO);
+    Logger::instance().info("Replication demo started");
+    
+    // 创建客户端
+    auto master_client = std::make_unique<KVClient>();
+    auto slave_client = std::make_unique<KVClient>();
+    
+    // 注意：KVClient 默认会使用 Router 来路由请求
+    // 这里我们假设已经配置了正确的节点信息
+    // 在实际使用中，可能需要先设置路由配置
+    
+    std::cout << "Writing to master..." << std::endl;
+    if (master_client->put("repl_key", "repl_value")) {
+        std::cout << "Put successful" << std::endl;
+    } else {
+        std::cout << "Put failed" << std::endl;
+    }
+    
+    // 等待复制
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    
+    std::cout << "Reading from slave..." << std::endl;
+    std::string value = slave_client->get("repl_key");
+    if (!value.empty()) {
+        std::cout << "Got from slave: " << value << std::endl;
+    } else {
+        std::cout << "Failed to read from slave or key not found" << std::endl;
+    }
+    
+    // 删除操作
+    std::cout << "Deleting key..." << std::endl;
+    if (master_client->del("repl_key")) {
+        std::cout << "Delete successful" << std::endl;
+    } else {
+        std::cout << "Delete failed" << std::endl;
+    }
+    
+    // 测试 ping
+    std::cout << "Testing connection..." << std::endl;
+    if (master_client->ping()) {
+        std::cout << "Master is reachable" << std::endl;
+    } else {
+        std::cout << "Master is not reachable" << std::endl;
+    }
+    
+    Logger::instance().info("Replication demo finished");
     return 0;
 }

@@ -15,7 +15,7 @@ protected:
 TEST_F(MemoryStoreTest, BasicPutGet) {
     std::string value;
     
-    // 测试PUT
+    // 测试SET
     EXPECT_TRUE(store->Put("key1", "value1").ok());
     EXPECT_TRUE(store->Put("key2", "value2").ok());
     

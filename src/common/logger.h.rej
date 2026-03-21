@@ -1,0 +1,17 @@
+--- logger.h.bak
++++ logger.h
+@@ -21,10 +21,10 @@
+     static void init(LogLevel level);
+     static LogLevel getLevel();
+     
+-    void debug(const std::string& message, const std::string& file = "", int line = 0);
+-    void info(const std::string& message, const std::string& file = "", int line = 0);
+-    void warn(const std::string& message, const std::string& file = "", int line = 0);
+-    void error(const std::string& message, const std::string& file = "", int line = 0);
++    static void debug(const std::string& message, const std::string& file = "", int line = 0);
++    static void info(const std::string& message, const std::string& file = "", int line = 0);
++    static void warn(const std::string& message, const std::string& file = "", int line = 0);
++    static void error(const std::string& message, const std::string& file = "", int line = 0);
+     
+ private:
+     static LogLevel current_level;

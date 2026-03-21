@@ -5,6 +5,7 @@
 
 # 定义集群管理库
 add_library(cluster STATIC
+    admin_client.cc
     # 心跳检测和健康监控
     heartbeat.cc
     

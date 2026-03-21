@@ -8,7 +8,7 @@
 #include <atomic>
 #include <vector>
 
-struct NodeInfo {
+struct HeartbeatNodeInfo {  // 改名避免冲突
     std::string id;
     std::string host;
     int port;
@@ -44,14 +44,14 @@ public:
 private:
     void heartbeatThreadFunc();
     void checkThreadFunc();
-    void sendHeartbeat(NodeInfo& node);
+    void sendHeartbeat(HeartbeatNodeInfo& node);
     void checkNodeHealth();
     
     std::string node_id_;
     int interval_ms_;
     int timeout_ms_;
     
-    std::map<std::string, NodeInfo> nodes_;
+    std::map<std::string, HeartbeatNodeInfo> nodes_;
     mutable std::mutex mutex_;
     
     std::thread heartbeat_thread_;

@@ -1,4 +1,3 @@
-// src/network/simple_server.cc
 #include "simple_server.h"
 #include "../core/kv_store.h"
 #include "../common/protocol.h"
@@ -8,23 +7,25 @@
 #include <unistd.h>
 #include <cstring>
 #include <arpa/inet.h>
+#include <sstream>
 
 SimpleServer::SimpleServer(int port, std::shared_ptr<KVStore> store) 
     : port_(port), server_fd_(-1), running_(false), store_(store) {}
+
+SimpleServer::SimpleServer(int port, std::shared_ptr<KVStore> store, RequestHandler handler) 
+    : port_(port), server_fd_(-1), running_(false), store_(store), request_handler_(handler) {}
 
 SimpleServer::~SimpleServer() {
     Stop();
 }
 
 bool SimpleServer::Start() {
-    // 创建socket
     server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd_ < 0) {
         LOG_ERROR("Failed to create socket");
         return false;
     }
     
-    // 设置SO_REUSEADDR选项
     int opt = 1;
     if (setsockopt(server_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         LOG_ERROR("Failed to set socket options");
@@ -32,7 +33,6 @@ bool SimpleServer::Start() {
         return false;
     }
     
-    // 绑定地址
     struct sockaddr_in address;
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
@@ -44,7 +44,6 @@ bool SimpleServer::Start() {
         return false;
     }
     
-    // 开始监听
     if (listen(server_fd_, 10) < 0) {
         LOG_ERROR("Failed to listen on socket");
         close(server_fd_);
@@ -53,7 +52,6 @@ bool SimpleServer::Start() {
     
     running_ = true;
     
-    // 启动服务器线程
     std::thread server_thread(&SimpleServer::Run, this);
     server_thread.detach();
     
@@ -90,7 +88,6 @@ void SimpleServer::Run() {
         LOG_INFO("New connection from " + std::string(client_ip) + 
                 ":" + std::to_string(ntohs(client_addr.sin_port)));
         
-        // 为每个客户端创建新线程处理
         std::thread client_thread(&SimpleServer::HandleClient, this, client_fd);
         client_thread.detach();
     }
@@ -117,6 +114,12 @@ void SimpleServer::HandleClient(int client_fd) {
 }
 
 std::string SimpleServer::ProcessCommand(const std::string& request) {
+    // 如果有自定义处理器，使用它
+    if (request_handler_) {
+        return request_handler_(request);
+    }
+    
+    // 默认处理
     Request req = ProtocolParser::ParseRequest(request);
     Response resp;
     

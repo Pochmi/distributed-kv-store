@@ -1,0 +1,93 @@
+--- heartbeat.cc.bak
++++ heartbeat.cc
+@@ -17,7 +17,7 @@
+     node_id_(node_id),
+     interval_ms_(interval_ms),
+     timeout_ms_(timeout_ms) {
+-    Logger::info("HeartbeatManager initialized for node %s", node_id.c_str());
++    Logger::instance().info("HeartbeatManager initialized for node " + node_id);
+ }
+ 
+ void HeartbeatManager::addNode(const std::string& node_id,
+@@ -27,7 +27,7 @@
+     std::lock_guard<std::mutex> lock(nodes_mutex_);
+     
+     if (nodes_.find(node_id) == nodes_.end()) {
+-        Logger::info("Added node %s (%s:%d) to heartbeat monitor",
++        Logger::instance().info("Added node " + node_id + " (" + host + ":" + std::to_string(port) + ") to heartbeat monitor");
+                 node_id.c_str(), host.c_str(), port);
+         
+         NodeInfo node_info;
+@@ -38,7 +38,7 @@
+         nodes_[node_id] = node_info;
+         
+     } else {
+-        Logger::warn("Node %s already exists in heartbeat monitor", node_id.c_str());
++        Logger::instance().warning("Node " + node_id + " already exists in heartbeat monitor");
+     }
+ }
+ 
+@@ -46,7 +46,7 @@
+     std::lock_guard<std::mutex> lock(nodes_mutex_);
+     
+     if (nodes_.erase(node_id) > 0) {
+-        Logger::info("Removed node %s from heartbeat monitor", node_id.c_str());
++        Logger::instance().info("Removed node " + node_id + " from heartbeat monitor");
+     }
+ }
+ 
+@@ -60,7 +60,7 @@
+         return;
+     }
+     
+-    Logger::info("HeartbeatManager started");
++    Logger::instance().info("HeartbeatManager started");
+     
+     running_ = true;
+     
+@@ -86,7 +86,7 @@
+     
+     auto last_heartbeat_time = std::chrono::steady_clock::now();
+     
+-    Logger::info("Heartbeat thread started");
++    Logger::instance().info("Heartbeat thread started");
+     
+     while (running_) {
+         auto now = std::chrono::steady_clock::now();
+@@ -125,13 +125,13 @@
+         std::this_thread::sleep_for(std::chrono::milliseconds(interval_ms_));
+     }
+     
+-    Logger::info("Heartbeat thread stopped");
++    Logger::instance().info("Heartbeat thread stopped");
+ }
+ 
+ void HeartbeatManager::checkThreadFunc() {
+     using namespace std::chrono;
+     
+-    Logger::info("Heartbeat check thread started");
++    Logger::instance().info("Heartbeat check thread started");
+     
+     while (running_) {
+         checkNodeHealth();
+@@ -216,17 +216,15 @@
+         if (elapsed > timeout_ms_ && node.is_alive) {
+             // 节点超时，标记为死亡
+             node.is_alive = false;
+-            Logger::warn("Node %s marked as dead (last heartbeat: %ldms ago)",
+-                        node.id.c_str(), elapsed);
++            Logger::instance().warning("Node " + node.id + " marked as dead (last heartbeat: " + std::to_string(elapsed) + "ms ago)");
+                         
+         } else if (elapsed <= timeout_ms_ && !node.is_alive) {
+             // 节点恢复，标记为存活
+             node.is_alive = true;
+-            Logger::info("Node %s is alive again", node.id.c_str());
++            Logger::instance().info("Node " + node.id + " is alive again");
+                         
+         } else if (node.is_alive && node.missed_beats > 0) {
+-            Logger::warn("Node %s marked as dead (missed %d beats)",
+-                        node.id.c_str(), node.missed_beats);
++            Logger::instance().warning("Node " + node.id + " marked as dead (missed " + std::to_string(node.missed_beats) + " beats)");
+         }
+     }
+ }

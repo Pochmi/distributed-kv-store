@@ -1,26 +1,29 @@
-// src/network/simple_server.h
 #ifndef SIMPLE_SERVER_H
 #define SIMPLE_SERVER_H
 
-#include <functional>
-#include <string>
-#include <thread>
-#include <vector>
-#include <atomic>
 #include <memory>
+#include <string>
+#include <atomic>
+#include <thread>
+#include <functional>
 
-class KVStore;  // 前向声明
+class KVStore;
 
 class SimpleServer {
 public:
+    // 请求处理器类型
     using RequestHandler = std::function<std::string(const std::string&)>;
     
+    // 构造函数
     SimpleServer(int port, std::shared_ptr<KVStore> store);
+    SimpleServer(int port, std::shared_ptr<KVStore> store, RequestHandler handler);
     ~SimpleServer();
     
     bool Start();
     void Stop();
-    bool IsRunning() const { return running_; }
+    
+    // 设置请求处理器
+    void SetRequestHandler(RequestHandler handler) { request_handler_ = handler; }
     
 private:
     void Run();
@@ -31,7 +34,7 @@ private:
     int server_fd_;
     std::atomic<bool> running_;
     std::shared_ptr<KVStore> store_;
-    std::vector<std::thread> worker_threads_;
+    RequestHandler request_handler_;
 };
 
-#endif // SIMPLE_SERVER_H
+#endif

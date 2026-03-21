@@ -1,428 +1,319 @@
 #include "common/logger.h"
-#include "common/config.h"
-#include "core/memory_store.h"
+#include "client/cluster_config.h"
+#include "core/kv_store.h"
 #include "network/simple_server.h"
 #include "replication/replica_manager.h"
-#include "replication/master.h"
-#include "replication/slave.h"
-#include "cluster/heartbeat.h"
-#include "cluster/failure_detector.h"
-
 #include <iostream>
 #include <memory>
-#include <string>
 #include <csignal>
-#include <atomic>
 #include <thread>
+#include <getopt.h>
 
-// Global pointers for signal handling
-std::atomic<bool> g_running{true};
-std::unique_ptr<simple_server> g_server;
-std::unique_ptr<ReplicaManager> g_replica_manager;
-std::unique_ptr<HeartbeatManager> g_heartbeat_manager;
+// 全局变量
+std::unique_ptr<SimpleServer> g_server;
+std::unique_ptr<KVStore> g_store;
+std::unique_ptr<ReplicaManager> g_replica_mgr;
 
-// Signal handler
+// 配置
+struct ServerConfig {
+    int port = 6380;
+    std::string host = "0.0.0.0";
+    std::string role = "master";
+    std::string master_addr;
+    bool replication_enabled = false;
+    bool cluster_enabled = false;
+    std::string config_file;
+    std::string log_level = "info";
+};
+
+// 信号处理函数
 void signal_handler(int signal) {
-    Logger::warn("Received signal %d, shutting down...", signal);
-    g_running = false;
+    Logger::instance().warning("Received signal " + std::to_string(signal) + ", shutting down...");
     
-    // Stop components in order
-    if (g_heartbeat_manager) {
-        g_heartbeat_manager->stop();
-    }
-    
-    if (g_replica_manager) {
-        g_replica_manager->stop();
+    if (g_replica_mgr) {
+        g_replica_mgr->stop();
     }
     
     if (g_server) {
-        g_server->stop();
+        g_server->Stop();
     }
-}
-
-// Print usage
-void print_usage(const char* program_name) {
-    std::cout << "Usage: " << program_name << " [OPTIONS]" << std::endl;
-    std::cout << std::endl;
-    std::cout << "Options:" << std::endl;
-    std::cout << "  --config <file>     Configuration file (required)" << std::endl;
-    std::cout << "  --port <num>        Server port" << std::endl;
-    std::cout << "  --host <addr>       Server host" << std::endl;
-    std::cout << "  --role <role>       Node role (master/slave)" << std::endl;
-    std::cout << "  --master <addr:port> Master address (for slaves)" << std::endl;
-    std::cout << "  --log-level <level> Log level (DEBUG/INFO/WARN/ERROR)" << std::endl;
-    std::cout << "  --help              Show this help message" << std::endl;
-    std::cout << std::endl;
-    std::cout << "Examples:" << std::endl;
-    std::cout << "  " << program_name << " --config configs/master.json" << std::endl;
-    std::cout << "  " << program_name << " --port 6380 --role master" << std::endl;
-    std::cout << "  " << program_name << " --port 6381 --role slave --master 127.0.0.1:6380" << std::endl;
-}
-
-// Parse command line arguments
-Config parse_arguments(int argc, char* argv[]) {
-    Config config;
     
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        
-        if (arg == "--help" || arg == "-h") {
-            print_usage(argv[0]);
-            exit(0);
-        }
-        else if (arg == "--config") {
-            if (i + 1 < argc) {
-                config = Config::loadFromFile(argv[++i]);
-            } else {
-                Logger::error("--config requires a file path");
-                exit(1);
+    exit(0);
+}
+
+// 自定义请求处理器 - 作为函数对象
+class ReplicationAwareHandler {
+public:
+    ReplicationAwareHandler(KVStore* store, ReplicaManager* replica_mgr)
+        : store_(store), replica_mgr_(replica_mgr) {}
+    
+    std::string operator()(const std::string& request) {
+        // 解析请求
+        if (request.substr(0, 3) == "SET") {
+            size_t space1 = request.find(' ', 4);
+            if (space1 == std::string::npos) {
+                return "ERROR: Invalid SET format";
             }
-        }
-        else if (arg == "--port") {
-            if (i + 1 < argc) {
-                config.setPort(std::stoi(argv[++i]));
+            std::string key = request.substr(4, space1 - 4);
+            std::string value = request.substr(space1 + 1);
+            // 去除末尾换行符
+            while (!value.empty() && (value.back() == '\n' || value.back() == '\r')) {
+                value.pop_back();
             }
+            return handleSet(key, value);
         }
-        else if (arg == "--host") {
-            if (i + 1 < argc) {
-                config.setHost(argv[++i]);
+        else if (request.substr(0, 3) == "GET") {
+            std::string key = request.substr(4);
+            // 去除末尾换行符
+            while (!key.empty() && (key.back() == '\n' || key.back() == '\r')) {
+                key.pop_back();
             }
+            return handleGet(key);
         }
-        else if (arg == "--role") {
-            if (i + 1 < argc) {
-                config.setRole(argv[++i]);
+        else if (request.substr(0, 3) == "DEL") {
+            std::string key = request.substr(4);
+            // 去除末尾换行符
+            while (!key.empty() && (key.back() == '\n' || key.back() == '\r')) {
+                key.pop_back();
             }
+            return handleDelete(key);
         }
-        else if (arg == "--master") {
-            if (i + 1 < argc) {
-                std::string master_addr = argv[++i];
-                size_t colon_pos = master_addr.find(':');
-                if (colon_pos != std::string::npos) {
-                    config.setMasterHost(master_addr.substr(0, colon_pos));
-                    config.setMasterPort(std::stoi(master_addr.substr(colon_pos + 1)));
-                }
-            }
-        }
-        else if (arg == "--log-level") {
-            if (i + 1 < argc) {
-                config.setLogLevel(argv[++i]);
-            }
+        else if (request == "STATUS" || request == "STATUS\n") {
+            return handleStatus();
         }
         else {
-            Logger::warn("Unknown argument: %s", arg.c_str());
+            return "ERROR: Unknown command";
+        }
+    }
+    
+private:
+    std::string handleSet(const std::string& key, const std::string& value) {
+        // 如果是主节点，通过复制管理器写入
+        if (replica_mgr_ && replica_mgr_->role() == ReplicaManager::MASTER) {
+            if (replica_mgr_->handleWrite(key, value, false)) {
+                return "OK\n";
+            } else {
+                return "ERROR: Failed to write\n";
+            }
+        }
+        // 否则直接写入存储
+        else if (store_->Put(key, value).ok()) {
+            return "OK\n";
+        }
+        else {
+            return "ERROR: Failed to write\n";
+        }
+    }
+    
+    std::string handleGet(const std::string& key) {
+        std::string value;
+        Status status = store_->Get(key, value);
+        if (status.ok()) {
+            return "OK " + value + "\n";
+        } else if (status.is_key_not_found()) {
+            return "NOT_FOUND\n";
+        } else {
+            return "ERROR: " + status.message + "\n";
+        }
+    }
+    
+    std::string handleDelete(const std::string& key) {
+        // 如果是主节点，通过复制管理器删除
+        if (replica_mgr_ && replica_mgr_->role() == ReplicaManager::MASTER) {
+            if (replica_mgr_->handleWrite(key, "", true)) {
+                return "OK\n";
+            } else {
+                return "ERROR: Failed to delete\n";
+            }
+        }
+        // 否则直接删除
+        else if (store_->Delete(key).ok()) {
+            return "OK\n";
+        }
+        else {
+            return "ERROR: Failed to delete\n";
+        }
+    }
+    
+    std::string handleStatus() {
+        std::string status = "Server Status:\n";
+        status += "  Store size: " + std::to_string(store_->Size()) + "\n";
+        
+        if (replica_mgr_) {
+            status += "  Replication: enabled\n";
+            status += replica_mgr_->getStatus();
+        } else {
+            status += "  Replication: disabled\n";
+        }
+        
+        return status;
+    }
+    
+    KVStore* store_;
+    ReplicaManager* replica_mgr_;
+};
+
+// 解析命令行参数
+ServerConfig parse_arguments(int argc, char* argv[]) {
+    ServerConfig config;
+    
+    static struct option long_options[] = {
+        {"port", required_argument, 0, 'p'},
+        {"host", required_argument, 0, 'h'},
+        {"role", required_argument, 0, 'r'},
+        {"master", required_argument, 0, 'm'},
+        {"config", required_argument, 0, 'c'},
+        {"log-level", required_argument, 0, 'l'},
+        {"replication", no_argument, 0, 'R'},
+        {"cluster", no_argument, 0, 'C'},
+        {0, 0, 0, 0}
+    };
+    
+    int opt;
+    int option_index = 0;
+    
+    while ((opt = getopt_long(argc, argv, "p:h:r:m:c:l:RC", long_options, &option_index)) != -1) {
+        switch (opt) {
+            case 'p':
+                config.port = std::stoi(optarg);
+                break;
+            case 'h':
+                config.host = optarg;
+                break;
+            case 'r':
+                config.role = optarg;
+                break;
+            case 'm':
+                config.master_addr = optarg;
+                config.replication_enabled = true;
+                break;
+            case 'c':
+                config.config_file = optarg;
+                break;
+            case 'l':
+                config.log_level = optarg;
+                break;
+            case 'R':
+                config.replication_enabled = true;
+                break;
+            case 'C':
+                config.cluster_enabled = true;
+                break;
+            default:
+                std::cerr << "Usage: " << argv[0] 
+                          << " [--port PORT] [--host HOST] [--role master|slave]"
+                          << " [--master HOST:PORT] [--config FILE] [--log-level LEVEL]"
+                          << " [--replication] [--cluster]" << std::endl;
+                exit(1);
         }
     }
     
     return config;
 }
 
-// Initialize replication manager
-std::unique_ptr<ReplicaManager> init_replication(const Config& config, 
-                                                 KVStore* store) {
-    if (!config.isReplicationEnabled()) {
-        Logger::info("Replication is disabled");
-        return nullptr;
-    }
-    
-    Logger::info("Initializing replication manager...");
-    
-    // Determine role
-    ReplicaManager::Role role;
-    if (config.getRole() == "master") {
-        role = ReplicaManager::MASTER;
-        Logger::info("Node role: MASTER");
-    } else if (config.getRole() == "slave") {
-        role = ReplicaManager::SLAVE;
-        Logger::info("Node role: SLAVE");
-    } else {
-        Logger::error("Unknown role: %s", config.getRole().c_str());
-        return nullptr;
-    }
-    
-    // Create replication manager
-    auto replica_mgr = std::make_unique<ReplicaManager>(
-        store, 
-        role, 
-        config.getNodeId()
-    );
-    
-    // Configure based on role
-    if (role == ReplicaManager::SLAVE) {
-        // Slave node: connect to master
-        if (!config.getMasterHost().empty() && config.getMasterPort() > 0) {
-            replica_mgr->setMaster(config.getMasterHost(), config.getMasterPort());
-            Logger::info("Configured master: %s:%d", 
-                        config.getMasterHost().c_str(), 
-                        config.getMasterPort());
-        } else {
-            Logger::warn("Slave node but no master specified");
-        }
-    } else {
-        // Master node: add slaves
-        const auto& slaves = config.getSlaves();
-        for (const auto& slave : slaves) {
-            replica_mgr->addSlave(slave.host, slave.port);
-            Logger::info("Added slave: %s:%d", slave.host.c_str(), slave.port);
-        }
-    }
-    
-    return replica_mgr;
-}
-
-// Initialize heartbeat manager
-std::unique_ptr<HeartbeatManager> init_heartbeat(const Config& config) {
-    if (!config.isClusterEnabled()) {
-        return nullptr;
-    }
-    
-    Logger::info("Initializing heartbeat manager...");
-    
-    auto heartbeat_mgr = std::make_unique<HeartbeatManager>(
-        config.getNodeId(),
-        config.getHeartbeatIntervalMs(),
-        config.getHeartbeatTimeoutMs()
-    );
-    
-    // Add cluster nodes to monitor
-    const auto& cluster_nodes = config.getClusterNodes();
-    for (const auto& node : cluster_nodes) {
-        if (node.id != config.getNodeId()) {  // Don't monitor self
-            heartbeat_mgr->addNode(node.id, node.host, node.port);
-            Logger::info("Monitoring node: %s (%s:%d)", 
-                        node.id.c_str(), node.host.c_str(), node.port);
-        }
-    }
-    
-    return heartbeat_mgr;
-}
-
-// Request handler with replication support
-class ReplicationAwareHandler : public RequestHandler {
-public:
-    ReplicationAwareHandler(KVStore* store, ReplicaManager* replica_mgr)
-        : store_(store), replica_mgr_(replica_mgr) {}
-    
-    std::string handleRequest(const std::string& request) override {
-        // Parse request
-        std::string cmd, key, value;
-        if (!parseCommand(request, cmd, key, value)) {
-            return "ERROR Invalid command format";
-        }
-        
-        // Handle different commands
-        if (cmd == "PUT") {
-            return handlePut(key, value);
-        }
-        else if (cmd == "GET") {
-            return handleGet(key);
-        }
-        else if (cmd == "DELETE") {
-            return handleDelete(key);
-        }
-        else if (cmd == "REPLICATION_STATUS") {
-            return handleReplicationStatus();
-        }
-        else if (cmd == "NODE_STATUS") {
-            return handleNodeStatus();
-        }
-        else if (cmd == "PING") {
-            return "PONG";
-        }
-        else {
-            return "ERROR Unknown command: " + cmd;
-        }
-    }
-    
-private:
-    bool parseCommand(const std::string& request, 
-                     std::string& cmd, 
-                     std::string& key, 
-                     std::string& value) {
-        size_t space1 = request.find(' ');
-        if (space1 == std::string::npos) {
-            cmd = request;
-            return true;
-        }
-        
-        cmd = request.substr(0, space1);
-        
-        size_t space2 = request.find(' ', space1 + 1);
-        if (space2 == std::string::npos) {
-            key = request.substr(space1 + 1);
-            return true;
-        }
-        
-        key = request.substr(space1 + 1, space2 - space1 - 1);
-        value = request.substr(space2 + 1);
-        return true;
-    }
-    
-    std::string handlePut(const std::string& key, const std::string& value) {
-        // If we have replication manager, use it
-        if (replica_mgr_ && replica_mgr_->getRole() == ReplicaManager::MASTER) {
-            if (replica_mgr_->handleWrite(key, value, false)) {
-                return "OK";
-            } else {
-                return "ERROR Replication failed";
-            }
-        }
-        // Otherwise write directly
-        else if (store_->put(key, value)) {
-            return "OK";
-        } else {
-            return "ERROR Write failed";
-        }
-    }
-    
-    std::string handleGet(const std::string& key) {
-        std::string value;
-        if (store_->get(key, value)) {
-            return "OK " + value;
-        } else {
-            return "ERROR Key not found";
-        }
-    }
-    
-    std::string handleDelete(const std::string& key) {
-        // If we have replication manager, use it
-        if (replica_mgr_ && replica_mgr_->getRole() == ReplicaManager::MASTER) {
-            if (replica_mgr_->handleWrite(key, "", true)) {
-                return "OK";
-            } else {
-                return "ERROR Replication failed";
-            }
-        }
-        // Otherwise delete directly
-        else if (store_->deleteKey(key)) {
-            return "OK";
-        } else {
-            return "ERROR Delete failed";
-        }
-    }
-    
-    std::string handleReplicationStatus() {
-        if (!replica_mgr_) {
-            return "ERROR Replication not enabled";
-        }
-        
-        return replica_mgr_->getStatus();
-    }
-    
-    std::string handleNodeStatus() {
-        std::string status = "Node: " + (replica_mgr_ ? 
-            (replica_mgr_->getRole() == ReplicaManager::MASTER ? "MASTER" : "SLAVE") : 
-            "STANDALONE");
-        
-        if (replica_mgr_) {
-            status += "\n" + replica_mgr_->getStatus();
-        }
-        
-        return status;
-    }
-    
-private:
-    KVStore* store_;
-    ReplicaManager* replica_mgr_;
-};
-
-// Main function
 int main(int argc, char* argv[]) {
-    // Parse command line arguments
-    Config config = parse_arguments(argc, argv);
+    // 解析参数
+    ServerConfig config = parse_arguments(argc, argv);
     
-    // Validate configuration
-    if (config.getPort() == 0) {
-        Logger::error("Port not specified. Use --port or config file");
-        print_usage(argv[0]);
+    // 检查必要参数
+    if (config.port == 0) {
+        std::cerr << "Error: Port not specified" << std::endl;
         return 1;
     }
     
-    // Set log level
-    Logger::setLevelFromString(config.getLogLevel());
-    
-    // Print startup banner
-    Logger::info("========================================");
-    Logger::info("   Distributed KV Store - Server");
-    Logger::info("   Version: 3.0.0 (Phase 3: Replication)");
-    Logger::info("========================================");
-    Logger::info("Node ID: %s", config.getNodeId().c_str());
-    Logger::info("Host: %s", config.getHost().c_str());
-    Logger::info("Port: %d", config.getPort());
-    Logger::info("Role: %s", config.getRole().c_str());
-    Logger::info("Replication: %s", 
-                config.isReplicationEnabled() ? "ENABLED" : "DISABLED");
-    
-    // Initialize storage engine
-    Logger::info("Initializing storage engine...");
-    auto store = std::make_unique<MemoryStore>();
-    
-    // Initialize replication manager
-    g_replica_manager = init_replication(config, store.get());
-    if (g_replica_manager) {
-        g_replica_manager->start();
+    // 设置日志级别
+    if (config.log_level == "debug") {
+        Logger::instance().setLevel(LOG_DEBUG);
+    } else if (config.log_level == "info") {
+        Logger::instance().setLevel(LOG_INFO);
+    } else if (config.log_level == "warning") {
+        Logger::instance().setLevel(LOG_WARNING);
+    } else if (config.log_level == "error") {
+        Logger::instance().setLevel(LOG_ERROR);
     }
     
-    // Initialize heartbeat manager (for cluster monitoring)
-    g_heartbeat_manager = init_heartbeat(config);
-    if (g_heartbeat_manager) {
-        g_heartbeat_manager->start();
-    }
+    // 打印启动信息
+    Logger::instance().info("========================================");
+    Logger::instance().info("   Distributed KV Store - Server");
+    Logger::instance().info("   Version: 3.0.0 (Phase 3: Replication)");
+    Logger::instance().info("========================================");
+    Logger::instance().info("Host: " + config.host);
+    Logger::instance().info("Port: " + std::to_string(config.port));
+    Logger::instance().info("Role: " + config.role);
+    Logger::instance().info("Replication: " + std::string(config.replication_enabled ? "enabled" : "disabled"));
     
-    // Create request handler
-    auto handler = std::make_unique<ReplicationAwareHandler>(
-        store.get(), 
-        g_replica_manager.get()
-    );
+    // 初始化存储引擎
+    Logger::instance().info("Initializing storage engine...");
+    g_store = KVStore::CreateMemoryStore();
     
-    // Create and start server
-    Logger::info("Starting server on %s:%d...", 
-                config.getHost().c_str(), config.getPort());
-    
-    g_server = std::make_unique<simple_server>(
-        config.getHost(),
-        config.getPort(),
-        std::move(handler)
-    );
-    
-    // Set up signal handlers
-    std::signal(SIGINT, signal_handler);
-    std::signal(SIGTERM, signal_handler);
-    
-    // Start server in a separate thread
-    std::thread server_thread([&]() {
-        if (!g_server->start()) {
-            Logger::error("Failed to start server");
-            g_running = false;
+    // 初始化复制管理器
+    if (config.replication_enabled) {
+        Logger::instance().info("Initializing replication manager...");
+        
+        ReplicaManager::Role role = (config.role == "master") ? 
+                                    ReplicaManager::MASTER : ReplicaManager::SLAVE;
+        
+        g_replica_mgr = std::make_unique<ReplicaManager>(
+            g_store.get(), role, "node1");
+        
+        // 配置复制
+        if (role == ReplicaManager::SLAVE && !config.master_addr.empty()) {
+            size_t colon_pos = config.master_addr.find(':');
+            if (colon_pos != std::string::npos) {
+                std::string master_host = config.master_addr.substr(0, colon_pos);
+                int master_port = std::stoi(config.master_addr.substr(colon_pos + 1));
+                g_replica_mgr->setMaster(master_host, master_port);
+                Logger::instance().info("Configured master: " + master_host + ":" + 
+                                       std::to_string(master_port));
+            }
         }
-    });
+    } else {
+        Logger::instance().info("Replication is disabled");
+    }
     
-    // Main loop
-    Logger::info("Server started successfully. Press Ctrl+C to stop.");
+    // 设置信号处理
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
     
-    while (g_running) {
+    // 创建请求处理器
+    ReplicationAwareHandler handler(g_store.get(), g_replica_mgr.get());
+    
+    // 创建并启动服务器（使用带 handler 的构造函数）
+    Logger::instance().info("Starting server on " + config.host + ":" + 
+                           std::to_string(config.port) + "...");
+    
+    // 注意：SimpleServer 需要两个构造函数：
+    // 1. SimpleServer(int port, std::shared_ptr<KVStore> store)
+    // 2. SimpleServer(int port, std::shared_ptr<KVStore> store, RequestHandler handler)
+    g_server = std::make_unique<SimpleServer>(
+        config.port, 
+        std::shared_ptr<KVStore>(g_store.get(), [](KVStore*){}),
+        handler);
+    
+    if (!g_server->Start()) {
+        Logger::instance().error("Failed to start server");
+        return 1;
+    }
+    
+    Logger::instance().info("Server started successfully. Press Ctrl+C to stop.");
+    
+    // 启动复制
+    if (g_replica_mgr) {
+        g_replica_mgr->start();
+    }
+    
+    // 主循环
+    Logger::instance().info("Entering main loop...");
+    
+    while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
         
-        // Periodically log status
+        // 可选：定期打印状态
         static int counter = 0;
-        if (++counter % 30 == 0) {  // Every 30 seconds
-            if (g_replica_manager) {
-                Logger::info("Replication status: %s", 
-                           g_replica_manager->getStatus().c_str());
-            }
-            
-            if (g_heartbeat_manager) {
-                auto node_status = g_heartbeat_manager->getNodeStatus();
-                Logger::info("Cluster nodes: %zu alive, %zu dead", 
-                           node_status.alive, node_status.dead);
-            }
+        if (++counter % 10 == 0) {
+            Logger::instance().debug("Server running...");
         }
     }
     
-    // Wait for server thread
-    if (server_thread.joinable()) {
-        server_thread.join();
-    }
-    
-    Logger::info("Server shutdown complete");
     return 0;
 }

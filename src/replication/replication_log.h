@@ -13,7 +13,7 @@ enum class LogType {
 
 struct ReplicationLogEntry {
     uint64_t log_id;
-    uint64_t term;  // 用于简化版的一致性
+    uint64_t term;
     LogType type;
     std::string key;
     std::string value;
@@ -24,17 +24,9 @@ class ReplicationLog {
 public:
     ReplicationLog();
     
-    // 添加日志条目
-    uint64_t append(LogType type, const std::string& key, 
-                   const std::string& value = "");
-    
-    // 获取从指定位置开始的日志
+    uint64_t append(LogType type, const std::string& key, const std::string& value = "");
     std::vector<ReplicationLogEntry> getEntriesFrom(uint64_t start_id, int max_count);
-    
-    // 获取最后一条日志ID
     uint64_t getLastLogId() const;
-    
-    // 应用到存储引擎
     bool applyToStore(class KVStore* store, uint64_t start_id = 0);
     
 private:
@@ -43,4 +35,4 @@ private:
     uint64_t next_log_id_;
 };
 
-#endif // REPLICATION_LOG_H
+#endif

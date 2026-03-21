@@ -25,7 +25,7 @@ AdminCommandHandler::AdminCommandHandler() {
 
 void AdminCommandHandler::registerCommand(const std::string& command, CommandHandler handler) {
     commands_[command] = handler;
-    Logger::debug("Registered admin command: %s", command.c_str());
+    Logger::instance().debug("Registered admin command: %s", command.c_str());
 }
 
 std::string AdminCommandHandler::handleCommand(const std::string& command_line) {
@@ -96,7 +96,7 @@ std::string AdminCommandHandler::handlePromote(const std::vector<std::string>& a
     }
     
     std::string slave_id = args[0];
-    Logger::info("Admin command: Promoting slave %s to master", slave_id.c_str());
+    Logger::instance().info("Admin command: Promoting slave %s to master", slave_id.c_str());
     
     // 这里实际会调用FailoverManager
     return "INFO: Promotion initiated for slave: " + slave_id + "\n"
@@ -109,14 +109,14 @@ std::string AdminCommandHandler::handleDemote(const std::vector<std::string>& ar
     }
     
     std::string master_id = args[0];
-    Logger::info("Admin command: Demoting master %s to slave", master_id.c_str());
+    Logger::instance().info("Admin command: Demoting master %s to slave", master_id.c_str());
     
     return "INFO: Demotion initiated for master: " + master_id + "\n"
            "Note: This is a simulation. Actual demotion logic needs to be implemented.";
 }
 
 std::string AdminCommandHandler::handleFailover(const std::vector<std::string>& args) {
-    Logger::info("Admin command: Initiating failover");
+    Logger::instance().info("Admin command: Initiating failover");
     
     // 模拟故障切换过程
     std::stringstream ss;

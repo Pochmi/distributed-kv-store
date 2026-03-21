@@ -1,41 +1,35 @@
-# 基础使用示例
-add_executable(example_basic
-    basic_usage.cc
-)
+# 示例程序
 
-target_link_libraries(example_basic
-    common
+# 基本用法示例
+add_executable(example_basic basic_usage.cc)
+target_link_libraries(example_basic 
     client
-)
-
-# 复制示例
-add_executable(example_replication
-    replication_demo.cc
-)
-
-target_link_libraries(example_replication
     common
+)
+
+# 集群客户端示例
+add_executable(example_cluster_client cluster_client.cc)
+target_link_libraries(example_cluster_client 
     client
-)
-
-# 集群管理示例
-add_executable(example_cluster
-    cluster_client.cc
-)
-
-target_link_libraries(example_cluster
     common
+)
+
+# 复制演示示例
+add_executable(example_replication replication_demo.cc)
+target_link_libraries(example_replication 
     client
-    cluster
+    common
 )
 
 # 管理工具示例
-add_executable(example_admin
-    admin_tool.cc
+add_executable(example_admin admin_tool.cc)
+target_link_libraries(example_admin 
+    common
+    client  # ClusterConfig 在 client 库中
 )
 
-target_link_libraries(example_admin
-    common
-    client
-    cluster
+# 设置输出目录
+set_target_properties(example_basic example_cluster_client example_replication example_admin
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
