@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分布式键值存储系统 - 在线演示</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', monospace;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        /* 顶部导航 */
+        .navbar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #4a5568;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: #667eea;
+        }
+        
+        /* 主容器 */
+        .demo-container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        /* 三栏布局 */
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1000px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 卡片样式 */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h3 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 4px solid #667eea;
+            padding-left: 15px;
+        }
+        
+        /* 终端样式 */
+        .terminal {
+            background: #1e1e1e;
+            border-radius: 12px;
+            overflow: hidden;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        
+        .terminal-header {
+            background: #2d2d2d;
+            padding: 10px 15px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .terminal-dot.red { background: #ff5f56; }
+        .terminal-dot.yellow { background: #ffbd2e; }
+        .terminal-dot.green { background: #27c93f; }
+        
+        .terminal-body {
+            padding: 20px;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .terminal-output {
+            color: #d4d4d4;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .terminal-output-line {
+            margin: 5px 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .terminal-input-line {
+            display: flex;
+            margin-top: 15px;
+        }
+        
+        .terminal-prompt {
+            color: #27c93f;
+            margin-right: 10px;
+        }
+        
+        .terminal-input {
+            background: transparent;
+            border: none;
+            color: #d4d4d4;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            flex: 1;
+            outline: none;
+        }
+        
+        /* 命令按钮 */
+        .cmd-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .cmd-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: transform 0.2s;
+        }
+        
+        .cmd-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        /* 节点状态 */
+        .node-status {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .node-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border-left: 4px solid #cbd5e0;
+        }
+        
+        .node-item.master {
+            border-left-color: #48bb78;
+        }
+        
+        .node-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .node-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        .node-status-dot.alive {
+            background: #48bb78;
+            box-shadow: 0 0 5px #48bb78;
+        }
+        
+        .node-status-dot.dead {
+            background: #f56565;
+        }
+        
+        .node-role {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #edf2f7;
+        }
+        
+        .node-role.master {
+            background: #c6f6d5;
+            color: #276749;
+        }
+        
+        /* 数据表格 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .data-table th {
+            color: #4a5568;
+            font-weight: 600;
+        }
+        
+        /* 输入组 */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: monospace;
+        }
+        
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        /* 动画 */
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 16px;
+            background: #27c93f;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-database"></i>
+                <span>Distributed KV Store</span>
+            </div>
+            <div class="nav-links">
+                <a href="#"><i class="fas fa-home"></i> 演示</a>
+                <a href="https://github.com/Pochmi/distributed-kv-store" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+                <a href="PROJECT_REPORT.md" target="_blank"><i class="fas fa-file-alt"></i> 报告</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-container">
+        <div class="demo-grid">
+            <!-- 左侧：命令终端 -->
+            <div class="card">
+                <h3><i class="fas fa-terminal"></i> 命令终端</h3>
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <div class="terminal-dot red"></div>
+                        <div class="terminal-dot yellow"></div>
+                        <div class="terminal-dot green"></div>
+                        <span style="color: #888; margin-left: 10px;">kv_client</span>
+                    </div>
+                    <div class="terminal-body" id="terminalBody">
+                        <div class="terminal-output">
+                            <div class="terminal-output-line">KV Store Client v4.0.0</div>
+                            <div class="terminal-output-line">Connected to cluster</div>
+                            <div class="terminal-output-line">Type 'help' for commands</div>
+                            <div class="terminal-output-line">---</div>
+                        </div>
+                        <div class="terminal-input-line">
+                            <span class="terminal-prompt">$&gt;</span>
+                            <input type="text" class="terminal-input" id="terminalInput" 
+                                   placeholder="输入命令..." autofocus>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="cmd-buttons">
+                    <button class="cmd-btn" onclick="runCommand('SET name 张三')">SET name 张三</button>
+                    <button class="cmd-btn" onclick="runCommand('GET name')">GET name</button>
+                    <button class="cmd-btn" onclick="runCommand('SET age 25')">SET age 25</button>
+                    <button class="cmd-btn" onclick="runCommand('GET age')">GET age</button>
+                    <button class="cmd-btn" onclick="runCommand('DEL name')">DEL name</button>
+                    <button class="cmd-btn" onclick="runCommand('STATUS')">STATUS</button>
+                    <button class="cmd-btn" onclick="clearTerminal()">清除</button>
+                </div>
+            </div>
+            
+            <!-- 中间：集群状态 -->
+            <div class="card">
+                <h3><i class="fas fa-server"></i> 集群状态</h3>
+                <div class="node-status" id="clusterStatus">
+                    <div class="node-item master" data-node="node_6381">
+                        <div class="node-info">
+                            <div class="node-status-dot alive"></div>
+                            <span><strong>node_6381</strong></span>
+                            <span class="node-role master">MASTER</span>
+                        </div>
+                        <span>127.0.0.1:6381</span>
+                    </div>
+                    <div class="node-item" data-node="node_6382">
+                        <div class="node-info">
+                            <div class="node-status-dot alive"></div>
+                            <span><strong>node_6382</strong></span>
+                            <span class="node-role">SLAVE</span>
+                        </div>
+                        <span>127.0.0.1:6382</span>
+                    </div>
+                    <div class="node-item" data-node="node_6383">
+                        <div class="node-info">
+                            <div class="node-status-dot alive"></div>
+                            <span><strong>node_6383</strong></span>
+                            <span class="node-role">SLAVE</span>
+                        </div>
+                        <span>127.0.0.1:6383</span>
+                    </div>
+                </div>
+                
+                <div class="stats-grid" style="margin-top: 20px;">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalKeys">0</div>
+                        <div>总键值对</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="qps">0</div>
+                        <div>QPS (模拟)</div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" id="failoverNode" placeholder="节点ID (如 node_6382)">
+                    <button class="cmd-btn" onclick="manualFailover()">手动切换</button>
+                </div>
+            </div>
+            
+            <!-- 右侧：数据展示 -->
+            <div class="card">
+                <h3><i class="fas fa-database"></i> 数据预览</h3>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr><th>Key</th><th>Value</th></tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <tr><td colspan="2" style="text-align: center;">暂无数据</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="input-group" style="margin-top: 15px;">
+                    <input type="text" id="newKey" placeholder="Key">
+                    <input type="text" id="newValue" placeholder="Value">
+                    <button class="cmd-btn" onclick="addData()">添加</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 架构图 -->
+        <div class="card" style="margin-top: 25px;">
+            <h3><i class="fas fa-project-diagram"></i> 系统架构</h3>
+            <pre style="background: #f8f9fa; padding: 20px; border-radius: 12px; overflow-x: auto; font-family: monospace; font-size: 12px;">
+┌─────────────────────────────────────────────────────────────┐
+│                      客户端 (kv_client)                      │
+│                    一致性哈希路由                             │
+└─────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│  节点 1       │    │  节点 2       │    │  节点 3       │
+│  6381         │    │  6382         │    │  6383         │
+│  [MASTER]     │    │  [SLAVE]      │    │  [SLAVE]      │
+└───────────────┘    └───────────────┘    └───────────────┘
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │   复制端口 6380    │
+                    │   (主节点监听)     │
+                    └───────────────────┘</pre>
+        </div>
+        
+        <!-- 项目信息 -->
+        <div class="card" style="margin-top: 25px;">
+            <h3><i class="fas fa-info-circle"></i> 项目信息</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 30px; justify-content: space-between;">
+                <div>
+                    <p><strong>项目阶段</strong></p>
+                    <ul style="list-style: none;">
+                        <li>✅ 阶段一：单机KV存储</li>
+                        <li>✅ 阶段二：分布式分片</li>
+                        <li>✅ 阶段三：主从复制</li>
+                        <li>✅ 阶段四：手动故障切换</li>
+                    </ul>
+                </div>
+                <div>
+                    <p><strong>技术栈</strong></p>
+                    <div class="tech-stack" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <span class="tech-tag">C++14</span>
+                        <span class="tech-tag">epoll</span>
+                        <span class="tech-tag">一致性哈希</span>
+                        <span class="tech-tag">主从复制</span>
+                        <span class="tech-tag">心跳检测</span>
+                    </div>
+                </div>
+                <div>
+                    <p><strong>作者</strong> 王硕 | 西安邮电大学</p>
+                    <p><strong>GitHub</strong> <a href="https://github.com/Pochmi">@Pochmi</a></p>
+                    <p><strong>许可证</strong> MIT License</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>分布式键值存储系统 | 毕业设计项目 | 在线演示页面</p>
+    </div>
+
+    <script>
+        // 模拟数据存储
+        let mockData = {
+            'name': '张三',
+            'age': '25',
+            'city': '西安'
+        };
+        
+        let qpsCounter = 0;
+        let qpsTimer = setInterval(() => {
+            document.getElementById('qps').textContent = qpsCounter;
+            qpsCounter = 0;
+        }, 1000);
+        
+        // 更新数据表格
+        function updateDataTable() {
+            const tbody = document.getElementById('dataTableBody');
+            if (Object.keys(mockData).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align: center;">暂无数据</td></tr>';
+            } else {
+                tbody.innerHTML = Object.entries(mockData).map(([k, v]) => 
+                    `<tr><td><code>${k}</code></td><td>${v}</td></tr>`
+                ).join('');
+            }
+            document.getElementById('totalKeys').textContent = Object.keys(mockData).length;
+        }
+        
+        // 添加终端输出
+        function addTerminalOutput(text, isError = false) {
+            const terminalBody = document.getElementById('terminalBody');
+            const outputDiv = document.createElement('div');
+            outputDiv.className = 'terminal-output-line';
+            outputDiv.style.color = isError ? '#f56565' : '#d4d4d4';
+            outputDiv.textContent = text;
+            terminalBody.insertBefore(outputDiv, terminalBody.lastElementChild);
+            terminalBody.scrollTop = terminalBody.scrollHeight;
+        }
+        
+        // 执行命令
+        function runCommand(cmd) {
+            addTerminalOutput(`$> ${cmd}`);
+            qpsCounter++;
+            
+            setTimeout(() => {
+                const parts = cmd.split(' ');
+                const command = parts[0].toUpperCase();
+                let result = '';
+                let isError = false;
+                
+                switch(command) {
+                    case 'SET':
+                        if (parts.length >= 3) {
+                            const key = parts[1];
+                            const value = parts.slice(2).join(' ');
+                            mockData[key] = value;
+                            result = `OK: ${key} = ${value}`;
+                            updateDataTable();
+                        } else {
+                            result = 'ERROR: Invalid SET format';
+                            isError = true;
+                        }
+                        break;
+                    case 'GET':
+                        if (parts.length >= 2) {
+                            const key = parts[1];
+                            if (mockData[key]) {
+                                result = `${key} = ${mockData[key]}`;
+                            } else {
+                                result = `NOT_FOUND: ${key}`;
+                                isError = true;
+                            }
+                        } else {
+                            result = 'ERROR: Invalid GET format';
+                            isError = true;
+                        }
+                        break;
+                    case 'DEL':
+                        if (parts.length >= 2) {
+                            const key = parts[1];
+                            if (mockData[key]) {
+                                delete mockData[key];
+                                result = `OK: ${key} deleted`;
+                                updateDataTable();
+                            } else {
+                                result = `NOT_FOUND: ${key}`;
+                                isError = true;
+                            }
+                        } else {
+                            result = 'ERROR: Invalid DEL format';
+                            isError = true;
+                        }
+                        break;
+                    case 'STATUS':
+                        result = `Cluster Status:\n  Total keys: ${Object.keys(mockData).length}\n  Master: node_6381\n  Slaves: node_6382, node_6383\n  Replication: enabled`;
+                        break;
+                    case 'ADMIN_STATUS':
+                        result = `=== Cluster Status ===\nCurrent Master: node_6381\nNodes: node_6381 (ALIVE), node_6382 (ALIVE), node_6383 (ALIVE)`;
+                        break;
+                    case 'HELP':
+                        result = `Commands: SET <key> <value>, GET <key>, DEL <key>, STATUS, ADMIN_STATUS, ADMIN_FAILOVER <node>`;
+                        break;
+                    default:
+                        result = `Unknown command: ${command}. Type HELP for available commands.`;
+                        isError = true;
+                }
+                
+                addTerminalOutput(result, isError);
+            }, 50);
+        }
+        
+        // 手动故障切换
+        function manualFailover() {
+            const node = document.getElementById('failoverNode').value;
+            if (!node) {
+                addTerminalOutput('ERROR: Please specify node ID (e.g., node_6382)', true);
+                return;
+            }
+            
+            addTerminalOutput(`ADMIN_FAILOVER ${node}`);
+            setTimeout(() => {
+                addTerminalOutput(`OK: Failover completed to ${node}`);
+                // 更新UI：切换主节点显示
+                document.querySelectorAll('.node-item').forEach(item => {
+                    item.classList.remove('master');
+                    const roleSpan = item.querySelector('.node-role');
+                    if (item.getAttribute('data-node') === node) {
+                        item.classList.add('master');
+                        roleSpan.textContent = 'MASTER';
+                        roleSpan.classList.add('master');
+                    } else {
+                        roleSpan.textContent = 'SLAVE';
+                        roleSpan.classList.remove('master');
+                    }
+                });
+            }, 100);
+        }
+        
+        // 添加数据
+        function addData() {
+            const key = document.getElementById('newKey').value.trim();
+            const value = document.getElementById('newValue').value.trim();
+            if (key && value) {
+                runCommand(`SET ${key} ${value}`);
+                document.getElementById('newKey').value = '';
+                document.getElementById('newValue').value = '';
+            }
+        }
+        
+        // 清除终端
+        function clearTerminal() {
+            const terminalBody = document.getElementById('terminalBody');
+            const inputLine = terminalBody.lastElementChild;
+            terminalBody.innerHTML = `
+                <div class="terminal-output">
+                    <div class="terminal-output-line">KV Store Client v4.0.0</div>
+                    <div class="terminal-output-line">Connected to cluster</div>
+                    <div class="terminal-output-line">Type 'help' for commands</div>
+                    <div class="terminal-output-line">---</div>
+                </div>
+                <div class="terminal-input-line">
+                    <span class="terminal-prompt">$&gt;</span>
+                    <input type="text" class="terminal-input" id="terminalInput" 
+                           placeholder="输入命令..." autofocus>
+                </div>
+            `;
+            const newInput = document.getElementById('terminalInput');
+            if (newInput) {
+                newInput.focus();
+                newInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        const cmd = newInput.value.trim();
+                        if (cmd) {
+                            runCommand(cmd);
+                            newInput.value = '';
+                        }
+                    }
+                });
+            }
+        }
+        
+        // 初始化终端输入
+        function initTerminal() {
+            const input = document.getElementById('terminalInput');
+            if (input) {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        const cmd = input.value.trim();
+                        if (cmd) {
+                            runCommand(cmd);
+                            input.value = '';
+                        }
+                    }
+                });
+            }
+        }
+        
+        // 页面加载完成
+        window.addEventListener('DOMContentLoaded', () => {
+            updateDataTable();
+            initTerminal();
+            
+            // 模拟QPS统计
+            setInterval(() => {
+                qpsCounter++;
+            }, 100);
+        });
+        
+        // 控制台输出
+        console.log('%c🔧 分布式KV存储系统 v4.0.0\n%c已完成阶段四：手动故障切换', 
+            'color: #667eea; font-size: 14px;', 
+            'color: #48bb78; font-size: 12px;');
+    </script>
+</body>
+</html>
