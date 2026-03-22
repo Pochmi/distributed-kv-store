@@ -3,6 +3,8 @@
 #include "core/kv_store.h"
 #include "network/simple_server.h"
 #include "replication/replica_manager.h"
+#include "cluster/heartbeat.h"
+#include "cluster/failover_manager.h"
 #include <iostream>
 #include <memory>
 #include <csignal>
@@ -13,6 +15,8 @@
 std::unique_ptr<SimpleServer> g_server;
 std::unique_ptr<KVStore> g_store;
 std::unique_ptr<ReplicaManager> g_replica_mgr;
+std::unique_ptr<HeartbeatManager> g_heartbeat;
+std::unique_ptr<FailoverManager> g_failover;
 
 // 配置
 struct ServerConfig {
@@ -41,7 +45,7 @@ void signal_handler(int signal) {
     exit(0);
 }
 
-// 自定义请求处理器 - 作为函数对象
+// 自定义请求处理器
 class ReplicationAwareHandler {
 public:
     ReplicationAwareHandler(KVStore* store, ReplicaManager* replica_mgr)
@@ -56,7 +60,6 @@ public:
             }
             std::string key = request.substr(4, space1 - 4);
             std::string value = request.substr(space1 + 1);
-            // 去除末尾换行符
             while (!value.empty() && (value.back() == '\n' || value.back() == '\r')) {
                 value.pop_back();
             }
@@ -64,7 +67,6 @@ public:
         }
         else if (request.substr(0, 3) == "GET") {
             std::string key = request.substr(4);
-            // 去除末尾换行符
             while (!key.empty() && (key.back() == '\n' || key.back() == '\r')) {
                 key.pop_back();
             }
@@ -72,7 +74,6 @@ public:
         }
         else if (request.substr(0, 3) == "DEL") {
             std::string key = request.substr(4);
-            // 去除末尾换行符
             while (!key.empty() && (key.back() == '\n' || key.back() == '\r')) {
                 key.pop_back();
             }
@@ -81,14 +82,29 @@ public:
         else if (request == "STATUS" || request == "STATUS\n") {
             return handleStatus();
         }
+        // ========== 管理命令 ==========
+        else if (request.substr(0, 12) == "ADMIN_STATUS") {
+            return handleAdminStatus();
+        }
+        else if (request.substr(0, 14) == "ADMIN_FAILOVER") {
+            // 解析参数: ADMIN_FAILOVER <new_master>
+            std::string rest = request.substr(15);
+            while (!rest.empty() && (rest.back() == '\n' || rest.back() == '\r')) {
+                rest.pop_back();
+            }
+            return handleAdminFailover(rest);
+        }
+        else if (request.substr(0, 10) == "ADMIN_HELP") {
+            return handleAdminHelp();
+        }
+        // ===========================
         else {
-            return "ERROR: Unknown command";
+            return "ERROR: Unknown command\n";
         }
     }
     
 private:
     std::string handleSet(const std::string& key, const std::string& value) {
-        // 如果是主节点，通过复制管理器写入
         if (replica_mgr_ && replica_mgr_->role() == ReplicaManager::MASTER) {
             if (replica_mgr_->handleWrite(key, value, false)) {
                 return "OK\n";
@@ -96,7 +112,6 @@ private:
                 return "ERROR: Failed to write\n";
             }
         }
-        // 否则直接写入存储
         else if (store_->Put(key, value).ok()) {
             return "OK\n";
         }
@@ -118,7 +133,6 @@ private:
     }
     
     std::string handleDelete(const std::string& key) {
-        // 如果是主节点，通过复制管理器删除
         if (replica_mgr_ && replica_mgr_->role() == ReplicaManager::MASTER) {
             if (replica_mgr_->handleWrite(key, "", true)) {
                 return "OK\n";
@@ -126,7 +140,6 @@ private:
                 return "ERROR: Failed to delete\n";
             }
         }
-        // 否则直接删除
         else if (store_->Delete(key).ok()) {
             return "OK\n";
         }
@@ -148,6 +161,43 @@ private:
         
         return status;
     }
+    
+    // ========== 管理命令处理函数 ==========
+    std::string handleAdminStatus() {
+        std::string result = "=== Cluster Status ===\n";
+        if (g_failover) {
+            result += "Current Master: " + g_failover->getMaster() + "\n";
+        }
+        if (g_heartbeat) {
+            result += g_heartbeat->getStatus();
+        }
+        result += "=======================\n";
+        return result;
+    }
+    
+    std::string handleAdminFailover(const std::string& new_master) {
+        if (!g_failover) {
+            return "ERROR: Failover manager not initialized\n";
+        }
+        
+        Logger::instance().info("Manual failover requested to " + new_master);
+        
+        if (g_failover->manualFailover(new_master)) {
+            return "OK: Failover completed to " + new_master + "\n";
+        } else {
+            return "ERROR: Failover failed. Node " + new_master + " is not alive\n";
+        }
+    }
+    
+    std::string handleAdminHelp() {
+        std::string help = "=== Admin Commands ===\n";
+        help += "  ADMIN_STATUS           - Show cluster status\n";
+        help += "  ADMIN_FAILOVER <node>  - Manual failover to node\n";
+        help += "  ADMIN_HELP             - Show this help\n";
+        help += "=======================\n";
+        return help;
+    }
+    // =====================================
     
     KVStore* store_;
     ReplicaManager* replica_mgr_;
@@ -215,7 +265,8 @@ int main(int argc, char* argv[]) {
     // 解析参数
     ServerConfig config = parse_arguments(argc, argv);
     
-    // 检查必要参数
+    std::string node_id = "node_" + std::to_string(config.port);
+
     if (config.port == 0) {
         std::cerr << "Error: Port not specified" << std::endl;
         return 1;
@@ -235,7 +286,7 @@ int main(int argc, char* argv[]) {
     // 打印启动信息
     Logger::instance().info("========================================");
     Logger::instance().info("   Distributed KV Store - Server");
-    Logger::instance().info("   Version: 3.0.0 (Phase 3: Replication)");
+    Logger::instance().info("   Version: 4.0.0 (Phase 4: Failover)");
     Logger::instance().info("========================================");
     Logger::instance().info("Host: " + config.host);
     Logger::instance().info("Port: " + std::to_string(config.port));
@@ -254,9 +305,8 @@ int main(int argc, char* argv[]) {
                                     ReplicaManager::MASTER : ReplicaManager::SLAVE;
         
         g_replica_mgr = std::make_unique<ReplicaManager>(
-            g_store.get(), role, "node1");
+            g_store.get(), role, node_id);
         
-        // 配置复制
         if (role == ReplicaManager::SLAVE && !config.master_addr.empty()) {
             size_t colon_pos = config.master_addr.find(':');
             if (colon_pos != std::string::npos) {
@@ -271,6 +321,25 @@ int main(int argc, char* argv[]) {
         Logger::instance().info("Replication is disabled");
     }
     
+    // 初始化故障检测模块
+    if (config.cluster_enabled) {
+        Logger::instance().info("Initializing cluster heartbeat...");
+        g_heartbeat = std::make_unique<HeartbeatManager>(node_id, config.port);
+        g_failover = std::make_unique<FailoverManager>(g_heartbeat.get());
+        
+        // 添加集群节点
+        g_heartbeat->addNode("node_6381", "127.0.0.1", 6381);
+        g_heartbeat->addNode("node_6382", "127.0.0.1", 6382);
+        g_heartbeat->addNode("node_6383", "127.0.0.1", 6383);
+        
+        g_heartbeat->start();
+        
+        if (config.role == "master") {
+            g_failover->setMaster(node_id);
+        }
+        Logger::instance().info("Cluster heartbeat started");
+    }
+    
     // 设置信号处理
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
@@ -278,13 +347,10 @@ int main(int argc, char* argv[]) {
     // 创建请求处理器
     ReplicationAwareHandler handler(g_store.get(), g_replica_mgr.get());
     
-    // 创建并启动服务器（使用带 handler 的构造函数）
+    // 创建并启动服务器
     Logger::instance().info("Starting server on " + config.host + ":" + 
                            std::to_string(config.port) + "...");
     
-    // 注意：SimpleServer 需要两个构造函数：
-    // 1. SimpleServer(int port, std::shared_ptr<KVStore> store)
-    // 2. SimpleServer(int port, std::shared_ptr<KVStore> store, RequestHandler handler)
     g_server = std::make_unique<SimpleServer>(
         config.port, 
         std::shared_ptr<KVStore>(g_store.get(), [](KVStore*){}),
@@ -308,7 +374,11 @@ int main(int argc, char* argv[]) {
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
         
-        // 可选：定期打印状态
+        // 定期检查故障
+        if (g_failover) {
+            g_failover->checkAndFailover();
+        }
+        
         static int counter = 0;
         if (++counter % 10 == 0) {
             Logger::instance().debug("Server running...");

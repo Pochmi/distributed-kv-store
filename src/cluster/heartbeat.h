@@ -1,62 +1,69 @@
-#ifndef HEARTBEAT_H
-#define HEARTBEAT_H
+#ifndef CLUSTER_HEARTBEAT_H
+#define CLUSTER_HEARTBEAT_H
 
 #include <string>
+#include <functional>
+#include <atomic>
+#include <thread>
 #include <map>
 #include <mutex>
-#include <thread>
-#include <atomic>
-#include <vector>
-
-struct HeartbeatNodeInfo {  // 改名避免冲突
-    std::string id;
-    std::string host;
-    int port;
-    bool is_alive;
-    uint64_t last_heartbeat_time;
-    int missed_beats;
-};
-
-struct HeartbeatStatus {
-    int total_nodes;
-    int alive_nodes;
-    int dead_nodes;
-};
 
 class HeartbeatManager {
 public:
-    HeartbeatManager(const std::string& node_id, 
-                    int interval_ms = 1000, 
-                    int timeout_ms = 3000);
+    using Callback = std::function<void(const std::string&, bool)>;
+    
+    HeartbeatManager(const std::string& node_id, int port);
     ~HeartbeatManager();
     
-    void addNode(const std::string& node_id, 
-                const std::string& host, int port);
-    void removeNode(const std::string& node_id);
-    
-    void start();
+    // 启动心跳（发送和接收）
+    void start(int interval_ms = 1000);
     void stop();
     
-    HeartbeatStatus getNodeStatus() const;
-    std::vector<std::string> getDeadNodes() const;
+    // 注册收到心跳的回调
+    void setCallback(Callback cb);
+    
+    // 记录收到的心跳
+    void recordHeartbeat(const std::string& node_id);
+    
+    // 检查节点是否存活
+    bool isAlive(const std::string& node_id);
+    
+    // 添加节点到监控列表
+    void addNode(const std::string& node_id, const std::string& host, int port);
+    
+    // 获取所有故障节点
+    std::vector<std::string> getFailedNodes();
+    
+    // 定期检查超时
+    void checkTimeout();
+
+    // 获取状态信息
     std::string getStatus() const;
     
 private:
-    void heartbeatThreadFunc();
-    void checkThreadFunc();
-    void sendHeartbeat(HeartbeatNodeInfo& node);
-    void checkNodeHealth();
+    void sendLoop();
+    void receiveLoop();
     
     std::string node_id_;
+    int heartbeat_port_;  // 心跳端口 = 服务端口 + 100
     int interval_ms_;
     int timeout_ms_;
     
-    std::map<std::string, HeartbeatNodeInfo> nodes_;
-    mutable std::mutex mutex_;
-    
-    std::thread heartbeat_thread_;
-    std::thread check_thread_;
     std::atomic<bool> running_;
+    std::thread send_thread_;
+    std::thread recv_thread_;
+    
+    struct NodeStatus {
+        std::string host;
+        int port;
+        bool alive;
+        long last_heartbeat_ms;
+        int missed_count;
+    };
+    std::map<std::string, NodeStatus> nodes_;
+    std::mutex mutex_;
+    
+    Callback callback_;
 };
 
-#endif // HEARTBEAT_H
+#endif

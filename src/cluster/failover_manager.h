@@ -1,53 +1,43 @@
-#ifndef FAILOVER_MANAGER_H
-#define FAILOVER_MANAGER_H
+#ifndef CLUSTER_FAILOVER_MANAGER_H
+#define CLUSTER_FAILOVER_MANAGER_H
 
 #include <string>
 #include <vector>
-#include <map>
+#include <functional>
 #include <mutex>
-#include <thread>
-#include <atomic>
-
-struct ClusterNode {
-    std::string id;
-    std::string host;
-    int port;
-    std::string role;  // "master", "slave", "candidate"
-    int priority;
-    bool is_alive;
-};
+#include "heartbeat.h"
 
 class FailoverManager {
 public:
-    FailoverManager(const std::string& current_node_id);
+    using Callback = std::function<void(const std::string&, const std::string&)>;
+    
+    FailoverManager(HeartbeatManager* heartbeat);
     ~FailoverManager();
     
-    void addNode(const ClusterNode& node);
-    void removeNode(const std::string& node_id);
+    // 设置当前主节点
+    void setMaster(const std::string& node_id);
     
-    void startMonitoring();
-    void stopMonitoring();
+    // 获取当前主节点
+    std::string getMaster() const;
     
-    bool promoteSlaveToMaster(const std::string& slave_id);
-    bool demoteMasterToSlave(const std::string& master_id);
+    // 添加从节点（候选）
+    void addSlave(const std::string& node_id);
     
-    std::string getMasterId() const;
-    std::vector<std::string> getSlaveIds() const;
+    // 检查并执行故障切换
+    void checkAndFailover();
     
-    std::string getClusterStatus() const;
+    // 手动切换
+    bool manualFailover(const std::string& new_master);
+    
+    // 注册切换回调
+    void setFailoverCallback(Callback cb);
     
 private:
-    void monitorThreadFunc();
-    void detectMasterFailure();
-    ClusterNode selectNewMaster();
-    bool initiateElection();
-    
-    std::string current_node_id_;
-    std::map<std::string, ClusterNode> cluster_nodes_;
+    HeartbeatManager* heartbeat_;
+    std::string current_master_;
+    std::vector<std::string> slaves_;
+    Callback callback_;
     mutable std::mutex mutex_;
-    
-    std::thread monitor_thread_;
-    std::atomic<bool> monitoring_;
 };
 
-#endif // FAILOVER_MANAGER_H
+#endif
