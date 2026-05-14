@@ -1,36 +1,42 @@
 #include "router.h"
+#include "../common/consistent_hash.h"
 #include <iostream>
-#include <functional>
+
+static ConsistentHash g_hash_ring;
 
 Router::Router() : config_(ClusterConfig::getInstance()) {
-    std::cout << "[Router] 路由器初始化完成" << std::endl;
+    refreshHashRing();
 }
 
-uint32_t Router::hash(const std::string& key) {
-    std::hash<std::string> hash_fn;
-    return static_cast<uint32_t>(hash_fn(key));
+void Router::refreshHashRing() {
+    auto masters = config_.getAvailableMasters();
+    std::vector<ConsistentHash::Node> nodes;
+    for (const auto& node : masters) {
+        nodes.push_back(ConsistentHash::Node(node.id, node.host, node.port, node.role));
+    }
+    g_hash_ring.updateNodes(nodes);
 }
 
 NodeInfo Router::route(const std::string& key) {
-    uint32_t hash_value = hash(key);
-    auto target_node = config_.getNodeByKey(key);
+    auto masters = config_.getAvailableMasters();
+    if (masters.empty()) {
+        throw std::runtime_error("No available master nodes");
+    }
     
-    std::cout << "[Router] 键 '" << key << "' 哈希值: " << hash_value 
-              << " -> " << target_node.id << " (" << target_node.address() << ")" << std::endl;
+    ConsistentHash::Node target = g_hash_ring.getNode(key);
     
-    return target_node;
+    NodeInfo result;
+    result.id = target.id;
+    result.host = target.host;
+    result.port = target.port;
+    result.role = target.role;
+    result.is_healthy = true;
+    
+    std::cout << "[Router] 键 '" << key << "' -> " << result.id 
+              << " (" << result.address() << ")" << std::endl;
+    return result;
 }
 
-std::vector<NodeInfo> Router::getAllNodes() {
-    return config_.getAllNodes();
-}
-
-void Router::markNodeUnhealthy(const std::string& node_id) {
-    config_.markNodeUnhealthy(node_id);
-    std::cout << "[Router] 标记节点 " << node_id << " 为不可用" << std::endl;
-}
-
-void Router::markNodeHealthy(const std::string& node_id) {
-    config_.markNodeHealthy(node_id);
-    std::cout << "[Router] 标记节点 " << node_id << " 为可用" << std::endl;
+std::vector<NodeInfo> Router::getAllMasters() {
+    return config_.getAvailableMasters();
 }

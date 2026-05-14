@@ -4,6 +4,7 @@ add_library(common STATIC
     config.cc
     protocol.cc
     utils.cc
+    consistent_hash.h
 )
 
 # 如果使用JSON库，可以在这里添加

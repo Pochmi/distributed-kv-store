@@ -46,8 +46,8 @@ std::string KVClient::executeWithRetry(const std::string& command, const std::st
             if (!connectToNode(target_node)) {
                 std::cerr << "[KVClient] 第 " << attempt << " 次尝试: 连接失败" << std::endl;
                 
-                // 标记节点为不健康
-                router_->markNodeUnhealthy(target_node.id);
+                // // 标记节点为不健康
+                // 
                 
                 // 尝试其他节点
                 if (attempt < max_retries) {
@@ -134,7 +134,8 @@ bool KVClient::batchPut(const std::vector<std::pair<std::string, std::string>>& 
 bool KVClient::ping() {
     try {
         // 尝试连接到任意一个节点
-        auto nodes = router_->getAllNodes();
+        // auto nodes = router_->getAllMasters();
+        auto nodes = router_->getAllMasters();  // 改成 getAllMasters()
         if (nodes.empty()) {
             return false;
         }

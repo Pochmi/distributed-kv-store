@@ -52,6 +52,7 @@ public:
         : store_(store), replica_mgr_(replica_mgr) {}
     
     std::string operator()(const std::string& request) {
+    std::cout << "[DEBUG] Received:  << request << " << std::endl;
         // 解析请求
         if (request.substr(0, 3) == "SET") {
             size_t space1 = request.find(' ', 4);
